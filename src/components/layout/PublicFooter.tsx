@@ -103,7 +103,7 @@ export const PublicFooter = ({ categories, whatsappNumber }: Props) => (
 
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <p className="text-xs text-muted/70">
-          © {new Date().getFullYear()} Aureon. Todos os direitos reservados.
+          © {new Date().getFullYear()} AureonX. Todos os direitos reservados.
         </p>
         <div className="flex items-center gap-5">
           <span className="text-xs text-muted/70 flex items-center gap-1.5">
