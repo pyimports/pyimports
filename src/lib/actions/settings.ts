@@ -1,30 +1,8 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
-
-// ---------------------------------------------------------------------------
-// Guard — exige sessão admin válida antes de qualquer mutação
-// ---------------------------------------------------------------------------
-
-async function requireAdmin(): Promise<{ id: string }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/admin/login");
-
-  const service = createServiceClient();
-  const { data: profile } = await service
-    .from("admin_profiles")
-    .select("id")
-    .eq("id", user.id)
-    .single();
-  if (!profile) redirect("/admin/login");
-
-  return { id: user.id };
-}
+import { createServiceClient } from "@/lib/supabase/server";
+import { requireAdminWrite } from "@/lib/auth/admin-guard";
 
 function extractErrorMessage(err: unknown, fallback: string): string {
   if (err instanceof Error) return err.message;
@@ -52,7 +30,8 @@ export interface StoreSettingsFormData {
 export async function updateStoreSettings(
   data: StoreSettingsFormData
 ): Promise<{ error: string } | { ok: true }> {
-  await requireAdmin();
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
 
   const service = createServiceClient();
 
@@ -99,9 +78,10 @@ export async function inviteAdminUser(
   email: string,
   password: string,
   name: string,
-  role: "owner" | "manager"
+  role: "owner" | "manager" | "viewer"
 ): Promise<{ error: string } | { ok: true }> {
-  await requireAdmin();
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
 
   if (password.length < 6) {
     return { error: "A senha precisa ter pelo menos 6 caracteres." };
@@ -137,9 +117,10 @@ export async function inviteAdminUser(
 }
 
 export async function removeAdminUser(id: string): Promise<{ error: string } | { ok: true }> {
-  const currentAdmin = await requireAdmin();
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
 
-  if (id === currentAdmin.id) {
+  if (id === guard.id) {
     return { error: "Você não pode remover o próprio usuário." };
   }
 

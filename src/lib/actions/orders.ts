@@ -1,26 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { requireAdminWrite } from "@/lib/auth/admin-guard";
 import { transitionOrderStatus } from "@/lib/orders/transition";
 import type { OrderStatus } from "@/types";
-
-async function requireAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Não autorizado");
-
-  const service = createServiceClient();
-  const { data: profile } = await service
-    .from("admin_profiles")
-    .select("id")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) throw new Error("Não autorizado");
-  return service;
-}
 
 // ---------------------------------------------------------------------------
 // updateOrderStatus
@@ -32,12 +16,9 @@ export async function updateOrderStatus(
   newStatus: OrderStatus,
   notes?: string
 ): Promise<{ error?: string }> {
-  let service: Awaited<ReturnType<typeof requireAdmin>>;
-  try {
-    service = await requireAdmin();
-  } catch {
-    return { error: "Não autorizado" };
-  }
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
+  const service = createServiceClient();
 
   const result = await transitionOrderStatus(service, orderId, newStatus, "admin", notes);
   if (result.error) return result;
@@ -65,12 +46,9 @@ export async function updateOrderTracking(
   trackingCode: string,
   trackingUrl: string
 ): Promise<{ error?: string }> {
-  let service: Awaited<ReturnType<typeof requireAdmin>>;
-  try {
-    service = await requireAdmin();
-  } catch {
-    return { error: "Não autorizado" };
-  }
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
+  const service = createServiceClient();
 
   const { error } = await service
     .from("orders")
@@ -91,12 +69,9 @@ export async function updateOrderInternalNotes(
   orderId: string,
   notes: string
 ): Promise<{ error?: string }> {
-  let service: Awaited<ReturnType<typeof requireAdmin>>;
-  try {
-    service = await requireAdmin();
-  } catch {
-    return { error: "Não autorizado" };
-  }
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
+  const service = createServiceClient();
 
   const { error } = await service
     .from("orders")

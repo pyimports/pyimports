@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { getAdminSessionForApi, READ_ONLY_ERROR } from "@/lib/auth/admin-guard";
 
 const ALLOWED_IMAGE_TYPES = new Set([
   "image/jpeg",
@@ -12,34 +12,16 @@ const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 MB
 const BUCKET = "product-images";
 
 // ---------------------------------------------------------------------------
-// Guard — requer sessão admin válida
-// ---------------------------------------------------------------------------
-
-async function getAdminUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const service = createServiceClient();
-  const { data: profile } = await service
-    .from("admin_profiles")
-    .select("id")
-    .eq("id", user.id)
-    .single();
-
-  return profile ? user : null;
-}
-
-// ---------------------------------------------------------------------------
 // POST /api/admin/upload — sobe arquivo para product-images/{productId}/{name}
 // ---------------------------------------------------------------------------
 
 export async function POST(request: NextRequest) {
-  const admin = await getAdminUser();
+  const admin = await getAdminSessionForApi();
   if (!admin) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  }
+  if (admin.role === "viewer") {
+    return NextResponse.json({ error: READ_ONLY_ERROR }, { status: 403 });
   }
 
   let formData: FormData;
@@ -111,9 +93,12 @@ export async function POST(request: NextRequest) {
 // ---------------------------------------------------------------------------
 
 export async function DELETE(request: NextRequest) {
-  const admin = await getAdminUser();
+  const admin = await getAdminSessionForApi();
   if (!admin) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+  }
+  if (admin.role === "viewer") {
+    return NextResponse.json({ error: READ_ONLY_ERROR }, { status: 403 });
   }
 
   const storagePath = request.nextUrl.searchParams.get("path");

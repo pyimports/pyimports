@@ -1,24 +1,8 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth/admin-guard";
 import { routes } from "@/lib/routes";
-
-async function requireAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Não autorizado");
-
-  const service = createServiceClient();
-  const { data: profile } = await service
-    .from("admin_profiles")
-    .select("id")
-    .eq("id", user.id)
-    .single();
-  if (!profile) throw new Error("Não autorizado");
-
-  return service;
-}
 
 export type AdminNotificationType = "order" | "coupon";
 
@@ -61,12 +45,8 @@ function buildTestNotifications(): AdminNotification[] {
 // ---------------------------------------------------------------------------
 
 export async function getAdminNotifications(): Promise<AdminNotification[] | { error: string }> {
-  let service: Awaited<ReturnType<typeof requireAdmin>>;
-  try {
-    service = await requireAdmin();
-  } catch {
-    return { error: "Não autorizado" };
-  }
+  await requireAdmin(); // leitura — qualquer papel autenticado, inclusive viewer
+  const service = createServiceClient();
 
   const notifications: AdminNotification[] = [];
 

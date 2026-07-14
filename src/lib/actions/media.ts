@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { requireAdminWrite } from "@/lib/auth/admin-guard";
 import type { UploadedMedia } from "@/components/admin/MediaUploader";
 
 const BUCKET = "product-images";
@@ -12,22 +12,6 @@ function extractStoragePath(url: string): string | undefined {
   const idx = url.indexOf(STORAGE_MARKER);
   if (idx === -1) return undefined;
   return url.slice(idx + STORAGE_MARKER.length);
-}
-
-async function requireAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Não autorizado");
-
-  const service = createServiceClient();
-  const { data: profile } = await service
-    .from("admin_profiles")
-    .select("id")
-    .eq("id", user.id)
-    .single();
-  if (!profile) throw new Error("Não autorizado");
-
-  return service;
 }
 
 // ---------------------------------------------------------------------------
@@ -48,12 +32,9 @@ export async function saveMediaChanges(
   items: UploadedMedia[],
   removedDbIds: string[]
 ): Promise<{ error?: string }> {
-  let service: Awaited<ReturnType<typeof requireAdmin>>;
-  try {
-    service = await requireAdmin();
-  } catch {
-    return { error: "Não autorizado" };
-  }
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
+  const service = createServiceClient();
 
   // Valida regras de quantidade no servidor — o client já impede isso na UI,
   // mas a action pode ser chamada diretamente, então a regra real fica aqui.

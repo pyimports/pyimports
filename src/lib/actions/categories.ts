@@ -1,29 +1,8 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/server";
-
-// ---------------------------------------------------------------------------
-// Guard — exige sessão admin válida antes de qualquer mutação
-// ---------------------------------------------------------------------------
-
-async function requireAdmin(): Promise<void> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/admin/login");
-
-  const service = createServiceClient();
-  const { data: profile } = await service
-    .from("admin_profiles")
-    .select("id")
-    .eq("id", user.id)
-    .single();
-  if (!profile) redirect("/admin/login");
-}
+import { requireAdminWrite } from "@/lib/auth/admin-guard";
 
 // ---------------------------------------------------------------------------
 // Tipos dos formulários
@@ -64,7 +43,8 @@ export async function toggleCategoryField(
   field: "is_active" | "is_featured_home",
   value: boolean
 ): Promise<{ error?: string }> {
-  await requireAdmin();
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
   const supabase = createServiceClient();
 
   const updateData =
@@ -86,7 +66,8 @@ export async function toggleCategoryField(
 export async function createCategory(
   data: CategoryFormData
 ): Promise<{ error?: string }> {
-  await requireAdmin();
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
 
   if (!data.name.trim()) return { error: "Nome é obrigatório." };
   if (!data.slug.trim()) return { error: "Slug é obrigatório." };
@@ -141,7 +122,8 @@ export async function updateCategory(
   id: string,
   data: CategoryFormData
 ): Promise<{ error?: string }> {
-  await requireAdmin();
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
 
   if (!data.name.trim()) return { error: "Nome é obrigatório." };
   if (!data.slug.trim()) return { error: "Slug é obrigatório." };
@@ -198,7 +180,8 @@ export async function updateCategory(
 }
 
 export async function deleteCategory(id: string): Promise<{ error?: string }> {
-  await requireAdmin();
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
 
   const supabase = createServiceClient();
 

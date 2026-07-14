@@ -2,28 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin, requireAdminWrite } from "@/lib/auth/admin-guard";
 import { routes } from "@/lib/routes";
 import type { HomeBanner } from "@/types";
 import type { Database } from "@/types/database.types";
 
 type BannerUpdate = Database["public"]["Tables"]["home_banners"]["Update"];
-
-async function assertAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Não autorizado");
-
-  const service = createServiceClient();
-  const { data } = await service
-    .from("admin_profiles")
-    .select("id")
-    .eq("id", user.id)
-    .single();
-  if (!data) throw new Error("Não autorizado");
-}
 
 export interface BannerFormData {
   title?: string;
@@ -82,7 +66,7 @@ async function resolveLinkUrl(
 }
 
 export async function getAllBanners(): Promise<HomeBanner[]> {
-  await assertAdmin();
+  await requireAdmin();
   const service = createServiceClient();
   const { data, error } = await service
     .from("home_banners")
@@ -95,11 +79,8 @@ export async function getAllBanners(): Promise<HomeBanner[]> {
 export async function createBanner(
   formData: BannerFormData
 ): Promise<{ id: string; link_url: string | null } | { error: string }> {
-  try {
-    await assertAdmin();
-  } catch {
-    return { error: "Não autorizado" };
-  }
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
 
   if (!formData.image_url) return { error: "image_url é obrigatório" };
 
@@ -144,11 +125,8 @@ export async function updateBanner(
   id: string,
   formData: Partial<BannerFormData>
 ): Promise<{ ok: true; link_url?: string | null } | { error: string }> {
-  try {
-    await assertAdmin();
-  } catch {
-    return { error: "Não autorizado" };
-  }
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
 
   const service = createServiceClient();
 
@@ -191,11 +169,8 @@ export async function updateBanner(
 export async function deleteBanner(
   id: string
 ): Promise<{ ok: true } | { error: string }> {
-  try {
-    await assertAdmin();
-  } catch {
-    return { error: "Não autorizado" };
-  }
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
 
   const service = createServiceClient();
   const { error } = await service.from("home_banners").delete().eq("id", id);

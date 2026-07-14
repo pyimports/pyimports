@@ -36,7 +36,7 @@ function SectionCard({ title, children }: { title: string; children: React.React
   );
 }
 
-const EMPTY_INVITE = { email: "", password: "", name: "", role: "manager" as "owner" | "manager" };
+const EMPTY_INVITE = { email: "", password: "", name: "", role: "manager" as "owner" | "manager" | "viewer" };
 
 interface Props {
   initialSettings: AdminStoreSettings;
@@ -219,8 +219,19 @@ export function ConfiguracoesClient({ initialSettings, initialAdmins, currentAdm
                       <p className="text-xs text-muted">{admin.email}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs bg-accent/10 text-accent px-2 py-1 rounded-lg border border-accent/20">
-                        {admin.role === "owner" ? "Administrador" : "Operador"}
+                      <span
+                        className={[
+                          "text-xs px-2 py-1 rounded-lg border",
+                          admin.role === "viewer"
+                            ? "bg-muted/10 text-muted border-dark-border-light"
+                            : "bg-accent/10 text-accent border-accent/20",
+                        ].join(" ")}
+                      >
+                        {admin.role === "owner"
+                          ? "Administrador"
+                          : admin.role === "viewer"
+                            ? "Somente visualização"
+                            : "Operador"}
                       </span>
                       {admin.id !== currentAdminId && (
                         <button
@@ -278,12 +289,19 @@ export function ConfiguracoesClient({ initialSettings, initialAdmins, currentAdm
           <Select
             label="Função"
             value={invite.role}
-            onChange={(v) => setInvite((p) => ({ ...p, role: v as "owner" | "manager" }))}
+            onChange={(v) => setInvite((p) => ({ ...p, role: v as "owner" | "manager" | "viewer" }))}
             options={[
               { value: "manager", label: "Operador" },
               { value: "owner", label: "Administrador" },
+              { value: "viewer", label: "Somente visualização" },
             ]}
           />
+          {invite.role === "viewer" && (
+            <p className="text-xs text-muted -mt-2">
+              Essa conta consegue ver e navegar por todo o painel, mas nenhuma alteração
+              (salvar, excluir, enviar imagem etc.) é aceita — bloqueado no servidor.
+            </p>
+          )}
           {inviteError && <p className="text-sm text-danger">{inviteError}</p>}
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="ghost" onClick={() => setInviteOpen(false)}>Cancelar</Button>

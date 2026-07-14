@@ -1,9 +1,8 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { requireAdmin, requireAdminWrite } from "@/lib/auth/admin-guard";
 import type { PriceTier, ProductSpecification, ProductFulfillmentType } from "@/types";
 import type { Json } from "@/types/database.types";
 
@@ -14,26 +13,6 @@ function extractProductImagePath(url: string): string | undefined {
   const idx = url.indexOf(PRODUCT_IMAGES_MARKER);
   if (idx === -1) return undefined;
   return url.slice(idx + PRODUCT_IMAGES_MARKER.length);
-}
-
-// ---------------------------------------------------------------------------
-// Guard
-// ---------------------------------------------------------------------------
-
-async function requireAdmin(): Promise<void> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/admin/login");
-
-  const service = createServiceClient();
-  const { data: profile } = await service
-    .from("admin_profiles")
-    .select("id")
-    .eq("id", user.id)
-    .single();
-  if (!profile) redirect("/admin/login");
 }
 
 // ---------------------------------------------------------------------------
@@ -126,7 +105,8 @@ export async function toggleProductField(
   field: "is_active" | "is_featured",
   value: boolean
 ): Promise<{ error?: string }> {
-  await requireAdmin();
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
   const supabase = createServiceClient();
 
   const updateData =
@@ -146,7 +126,8 @@ export async function toggleProductField(
 export async function createProduct(
   data: ProductFormData
 ): Promise<{ error?: string; id?: string }> {
-  await requireAdmin();
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
 
   if (!data.name.trim()) return { error: "Nome é obrigatório." };
   if (!data.slug.trim()) return { error: "Slug é obrigatório." };
@@ -229,7 +210,8 @@ export async function updateProduct(
   id: string,
   data: ProductFormData
 ): Promise<{ error?: string }> {
-  await requireAdmin();
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
 
   if (!data.name.trim()) return { error: "Nome é obrigatório." };
   if (!data.slug.trim()) return { error: "Slug é obrigatório." };
@@ -319,7 +301,8 @@ export async function copyProductImagesForDraft(
   sourceProductId: string,
   draftProductId: string
 ): Promise<{ error?: string; images?: { url: string; storagePath: string; altText?: string }[] }> {
-  await requireAdmin();
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
   const supabase = createServiceClient();
 
   const { data: media, error } = await supabase
@@ -391,7 +374,7 @@ export interface ProductDuplicationData {
 export async function getProductDataForDuplication(
   id: string
 ): Promise<ProductDuplicationData | null> {
-  await requireAdmin();
+  await requireAdmin(); // leitura — qualquer papel autenticado, inclusive viewer
   const supabase = createServiceClient();
 
   const { data, error } = await supabase
@@ -443,7 +426,8 @@ export async function getProductDataForDuplication(
 }
 
 export async function deleteProduct(id: string): Promise<{ error?: string }> {
-  await requireAdmin();
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
 
   const supabase = createServiceClient();
 
@@ -501,7 +485,8 @@ export async function reorderProducts(
   categoryId: string,
   orderedIds: string[]
 ): Promise<{ error?: string }> {
-  await requireAdmin();
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
   const supabase = createServiceClient();
 
   const results = await Promise.all(

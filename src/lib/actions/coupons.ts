@@ -1,23 +1,9 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
+import { requireAdmin, requireAdminWrite } from "@/lib/auth/admin-guard";
 import type { CouponType } from "@/types";
-
-// ── Auth guard ────────────────────────────────────────────────────────────────
-async function requireAdmin(): Promise<void> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/admin/login");
-  const service = createServiceClient();
-  const { data: profile } = await service
-    .from("admin_profiles")
-    .select("id")
-    .eq("id", user.id)
-    .single();
-  if (!profile) redirect("/admin/login");
-}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface AdminCoupon {
@@ -127,7 +113,7 @@ function toDbPayload(input: CouponFormInput) {
 
 // ── CRUD Actions ──────────────────────────────────────────────────────────────
 export async function listCoupons(): Promise<AdminCoupon[]> {
-  await requireAdmin();
+  await requireAdmin(); // leitura — qualquer papel autenticado, inclusive viewer
   const service = createServiceClient();
   const { data, error } = await service
     .from("coupons")
@@ -140,7 +126,8 @@ export async function listCoupons(): Promise<AdminCoupon[]> {
 export async function createCoupon(
   input: CouponFormInput
 ): Promise<{ error?: string }> {
-  await requireAdmin();
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
   const err = validate(input);
   if (err) return { error: err };
 
@@ -159,7 +146,8 @@ export async function updateCoupon(
   id: string,
   input: CouponFormInput
 ): Promise<{ error?: string }> {
-  await requireAdmin();
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
   const err = validate(input);
   if (err) return { error: err };
 
@@ -175,7 +163,8 @@ export async function updateCoupon(
 }
 
 export async function deleteCoupon(id: string): Promise<{ error?: string }> {
-  await requireAdmin();
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
   const service = createServiceClient();
   const { error } = await service.from("coupons").delete().eq("id", id);
   if (error) return { error: error.message };
@@ -187,7 +176,8 @@ export async function toggleCouponActive(
   id: string,
   isActive: boolean
 ): Promise<{ error?: string }> {
-  await requireAdmin();
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
   const service = createServiceClient();
   const { error } = await service
     .from("coupons")
@@ -272,7 +262,7 @@ function formatCurrency(value: number): string {
 export async function getCouponUsages(
   couponId: string
 ): Promise<CouponUsageRow[]> {
-  await requireAdmin();
+  await requireAdmin(); // leitura — qualquer papel autenticado, inclusive viewer
   const service = createServiceClient();
 
   const { data, error } = await service

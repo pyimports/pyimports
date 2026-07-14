@@ -1,32 +1,11 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { requireAdmin, requireAdminWrite } from "@/lib/auth/admin-guard";
 import { toYoutubeEmbedUrl } from "@/lib/formatters";
 import type { Review } from "@/types";
 import type { DbReview } from "@/types/database.types";
-
-// ---------------------------------------------------------------------------
-// Guard — mesmo padrão de src/lib/actions/categories.ts
-// ---------------------------------------------------------------------------
-
-async function requireAdmin(): Promise<void> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/admin/login");
-
-  const service = createServiceClient();
-  const { data: profile } = await service
-    .from("admin_profiles")
-    .select("id")
-    .eq("id", user.id)
-    .single();
-  if (!profile) redirect("/admin/login");
-}
 
 function toReview(row: DbReview): Review {
   return {
@@ -76,7 +55,7 @@ export interface ReviewFormData {
 // ---------------------------------------------------------------------------
 
 export async function getAllReviewsAdmin(): Promise<Review[]> {
-  await requireAdmin();
+  await requireAdmin(); // leitura — qualquer papel autenticado, inclusive viewer
   const supabase = createServiceClient();
 
   const { data, error } = await supabase
@@ -89,7 +68,8 @@ export async function getAllReviewsAdmin(): Promise<Review[]> {
 }
 
 export async function createReview(data: ReviewFormData): Promise<{ error?: string }> {
-  await requireAdmin();
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
 
   if (!data.customer_name.trim()) return { error: "Nome do cliente é obrigatório." };
   if (!data.state.trim()) return { error: "Estado é obrigatório." };
@@ -127,7 +107,8 @@ export async function updateReview(
   id: string,
   data: ReviewFormData
 ): Promise<{ error?: string }> {
-  await requireAdmin();
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
 
   if (!data.customer_name.trim()) return { error: "Nome do cliente é obrigatório." };
   if (!data.state.trim()) return { error: "Estado é obrigatório." };
@@ -162,7 +143,8 @@ export async function updateReview(
 }
 
 export async function deleteReview(id: string): Promise<{ error?: string }> {
-  await requireAdmin();
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
 
   const supabase = createServiceClient();
 
@@ -188,7 +170,8 @@ export async function toggleReviewActive(
   id: string,
   is_active: boolean
 ): Promise<{ error?: string }> {
-  await requireAdmin();
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
   const supabase = createServiceClient();
 
   const { error } = await supabase.from("reviews").update({ is_active }).eq("id", id);
@@ -202,7 +185,8 @@ export async function toggleReviewActive(
 // Reordenação via drag-and-drop — recebe os IDs já na ordem final e grava
 // display_order = posição no array, em lote.
 export async function reorderReviews(orderedIds: string[]): Promise<{ error?: string }> {
-  await requireAdmin();
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
   const supabase = createServiceClient();
 
   const updates = orderedIds.map((id, index) =>

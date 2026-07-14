@@ -2,24 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin, requireAdminWrite } from "@/lib/auth/admin-guard";
 import type { Announcement, AnnouncementType } from "@/types";
-
-async function assertAdmin() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Não autorizado");
-
-  const service = createServiceClient();
-  const { data } = await service
-    .from("admin_profiles")
-    .select("id")
-    .eq("id", user.id)
-    .single();
-  if (!data) throw new Error("Não autorizado");
-}
 
 export interface AnnouncementFormData {
   type: AnnouncementType;
@@ -55,7 +39,7 @@ function toAnnouncement(row: {
 }
 
 export async function getAllAnnouncements(): Promise<Announcement[]> {
-  await assertAdmin();
+  await requireAdmin();
   const service = createServiceClient();
   const { data, error } = await service
     .from("announcements")
@@ -68,11 +52,8 @@ export async function getAllAnnouncements(): Promise<Announcement[]> {
 export async function createAnnouncement(
   formData: AnnouncementFormData
 ): Promise<{ id: string } | { error: string }> {
-  try {
-    await assertAdmin();
-  } catch {
-    return { error: "Não autorizado" };
-  }
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
 
   if (!formData.title.trim())   return { error: "Título é obrigatório." };
   if (!formData.message.trim()) return { error: "Mensagem é obrigatória." };
@@ -104,11 +85,8 @@ export async function updateAnnouncement(
   id: string,
   formData: Partial<AnnouncementFormData>
 ): Promise<{ ok: true } | { error: string }> {
-  try {
-    await assertAdmin();
-  } catch {
-    return { error: "Não autorizado" };
-  }
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
 
   if (formData.type === "cupom" && !formData.coupon_code?.trim()) {
     return { error: "Código do cupom é obrigatório." };
@@ -136,11 +114,8 @@ export async function updateAnnouncement(
 export async function deleteAnnouncement(
   id: string
 ): Promise<{ ok: true } | { error: string }> {
-  try {
-    await assertAdmin();
-  } catch {
-    return { error: "Não autorizado" };
-  }
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
 
   const service = createServiceClient();
   const { error } = await service.from("announcements").delete().eq("id", id);

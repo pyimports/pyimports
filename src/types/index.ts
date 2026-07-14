@@ -697,7 +697,7 @@ export interface AdminProfile {
   id: string;
   email: string;
   name: string;
-  role: "owner" | "manager";
+  role: "owner" | "manager" | "viewer";
   avatar_url?: string;
   created_at: string;
   last_login?: string;
