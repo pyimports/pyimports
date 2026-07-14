@@ -342,6 +342,7 @@ export interface Announcement {
   type: AnnouncementType;
   title: string;
   message: string;
+  coupon_code?: string;
   is_active: boolean;
   display_order: number;
   created_at: string;

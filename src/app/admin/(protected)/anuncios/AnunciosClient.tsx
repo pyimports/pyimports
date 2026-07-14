@@ -44,13 +44,14 @@ interface FormState {
   type: AnnouncementType;
   title: string;
   message: string;
+  coupon_code: string;
   is_active: boolean;
 }
 
-const EMPTY_FORM: FormState = { type: "aviso", title: "", message: "", is_active: true };
+const EMPTY_FORM: FormState = { type: "aviso", title: "", message: "", coupon_code: "", is_active: true };
 
 function announcementToForm(a: Announcement): FormState {
-  return { type: a.type, title: a.title, message: a.message, is_active: a.is_active };
+  return { type: a.type, title: a.title, message: a.message, coupon_code: a.coupon_code ?? "", is_active: a.is_active };
 }
 
 function AnnouncementFormModal({
@@ -116,6 +117,17 @@ function AnnouncementFormModal({
           onChange={(e) => set("title", e.target.value)}
           placeholder="Ex: Frete grátis essa semana!"
         />
+        {form.type === "cupom" && (
+          <Input
+            label="Código do cupom"
+            value={form.coupon_code}
+            onChange={(e) => set("coupon_code", e.target.value.toUpperCase())}
+            placeholder="Ex: BEMVINDO10"
+            className="font-mono tracking-widest"
+            helper="Aparece destacado no sino do site, com botão de copiar."
+            required
+          />
+        )}
         <div>
           <label className="block text-xs font-medium text-dark-text mb-1.5">Mensagem</label>
           <textarea
@@ -249,6 +261,11 @@ export function AnunciosClient({ initialAnnouncements }: Props) {
                           <div>
                             <p className="font-medium text-dark-text">{a.title}</p>
                             <p className="text-xs text-muted mt-0.5 line-clamp-2">{a.message}</p>
+                            {a.coupon_code && (
+                              <span className="inline-block mt-1 px-2 py-0.5 rounded-md bg-success/10 border border-success/25 text-success text-[10px] font-mono font-bold tracking-wider">
+                                {a.coupon_code}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </td>

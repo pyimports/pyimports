@@ -25,6 +25,7 @@ export interface AnnouncementFormData {
   type: AnnouncementType;
   title: string;
   message: string;
+  coupon_code?: string;
   is_active?: boolean;
   display_order?: number;
 }
@@ -34,6 +35,7 @@ function toAnnouncement(row: {
   type: string;
   title: string;
   message: string;
+  coupon_code: string | null;
   is_active: boolean;
   display_order: number;
   created_at: string;
@@ -44,6 +46,7 @@ function toAnnouncement(row: {
     type:          row.type as AnnouncementType,
     title:         row.title,
     message:       row.message,
+    coupon_code:   row.coupon_code ?? undefined,
     is_active:     row.is_active,
     display_order: row.display_order,
     created_at:    row.created_at,
@@ -73,6 +76,9 @@ export async function createAnnouncement(
 
   if (!formData.title.trim())   return { error: "Título é obrigatório." };
   if (!formData.message.trim()) return { error: "Mensagem é obrigatória." };
+  if (formData.type === "cupom" && !formData.coupon_code?.trim()) {
+    return { error: "Código do cupom é obrigatório." };
+  }
 
   const service = createServiceClient();
   const { data, error } = await service
@@ -81,6 +87,7 @@ export async function createAnnouncement(
       type:          formData.type,
       title:         formData.title.trim(),
       message:       formData.message.trim(),
+      coupon_code:   formData.type === "cupom" ? formData.coupon_code!.trim().toUpperCase() : null,
       is_active:     formData.is_active ?? true,
       display_order: formData.display_order ?? 0,
     })
@@ -103,11 +110,18 @@ export async function updateAnnouncement(
     return { error: "Não autorizado" };
   }
 
+  if (formData.type === "cupom" && !formData.coupon_code?.trim()) {
+    return { error: "Código do cupom é obrigatório." };
+  }
+
   const service = createServiceClient();
   const patch = {
     ...(formData.type          !== undefined && { type: formData.type }),
     ...(formData.title         !== undefined && { title: formData.title.trim() }),
     ...(formData.message       !== undefined && { message: formData.message.trim() }),
+    ...(formData.coupon_code   !== undefined && {
+      coupon_code: formData.type === "cupom" ? formData.coupon_code.trim().toUpperCase() : null,
+    }),
     ...(formData.is_active     !== undefined && { is_active: formData.is_active }),
     ...(formData.display_order !== undefined && { display_order: formData.display_order }),
   };

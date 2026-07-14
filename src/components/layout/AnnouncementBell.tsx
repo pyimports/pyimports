@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { Bell, Megaphone, Tag, Info } from "lucide-react";
+import { Bell, Megaphone, Tag, Info, Copy, Check } from "lucide-react";
 import type { Announcement, AnnouncementType } from "@/types";
 
 interface Props {
@@ -22,7 +22,18 @@ const TYPE_STYLE: Record<AnnouncementType, { bg: string; text: string }> = {
 
 export const AnnouncementBell = ({ announcements }: Props) => {
   const [open, setOpen] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+
+  const handleCopyCoupon = async (id: string, code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId((v) => (v === id ? null : v)), 2000);
+    } catch {
+      // clipboard indisponível — sem feedback, não é crítico
+    }
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -65,6 +76,46 @@ export const AnnouncementBell = ({ announcements }: Props) => {
               {announcements.map((a) => {
                 const Icon = TYPE_ICON[a.type];
                 const style = TYPE_STYLE[a.type];
+
+                if (a.type === "cupom" && a.coupon_code) {
+                  const copied = copiedId === a.id;
+                  return (
+                    <div key={a.id} className="px-4 py-3.5 hover:bg-dark-alt/40 transition-colors">
+                      <div className="flex items-start gap-3 mb-2.5">
+                        <div className={`w-8 h-8 rounded-full border flex items-center justify-center flex-shrink-0 ${style.bg}`}>
+                          <Icon size={14} className={style.text} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-dark-text leading-snug">{a.title}</p>
+                          <p className="text-xs text-muted mt-0.5 leading-relaxed">{a.message}</p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => handleCopyCoupon(a.id, a.coupon_code!)}
+                        className="relative w-full flex items-center justify-between gap-3 pl-4 pr-3 py-2.5 rounded-xl overflow-hidden
+                          bg-gradient-to-r from-success/10 via-success/5 to-success/10 border border-dashed border-success/40
+                          hover:border-success/70 hover:from-success/15 hover:to-success/15 transition-all duration-200 group/coupon"
+                      >
+                        <span className="font-mono font-bold text-sm tracking-[0.15em] text-success">
+                          {a.coupon_code}
+                        </span>
+                        <span
+                          className={[
+                            "flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-all flex-shrink-0",
+                            copied
+                              ? "bg-success text-dark-bg"
+                              : "bg-success/15 text-success group-hover/coupon:bg-success/25",
+                          ].join(" ")}
+                        >
+                          {copied ? <Check size={12} /> : <Copy size={12} />}
+                          {copied ? "Copiado!" : "Copiar"}
+                        </span>
+                      </button>
+                    </div>
+                  );
+                }
+
                 return (
                   <div key={a.id} className="flex items-start gap-3 px-4 py-3.5 hover:bg-dark-alt/40 transition-colors">
                     <div className={`w-8 h-8 rounded-full border flex items-center justify-center flex-shrink-0 ${style.bg}`}>

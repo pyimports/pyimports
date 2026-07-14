@@ -1132,6 +1132,7 @@ export type Database = {
           type:          string;
           title:         string;
           message:       string;
+          coupon_code:   string | null;
           is_active:     boolean;
           display_order: number;
           created_at:    string;
@@ -1142,6 +1143,7 @@ export type Database = {
           type?:          string;
           title:          string;
           message:        string;
+          coupon_code?:   string | null;
           is_active?:     boolean;
           display_order?: number;
           created_at?:    string;

@@ -15,6 +15,7 @@ export async function getActiveAnnouncements(): Promise<Announcement[]> {
     type:          row.type as AnnouncementType,
     title:         row.title,
     message:       row.message,
+    coupon_code:   row.coupon_code ?? undefined,
     is_active:     row.is_active,
     display_order: row.display_order,
     created_at:    row.created_at,
