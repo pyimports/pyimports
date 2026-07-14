@@ -3,14 +3,16 @@ import { PublicFooter } from "@/components/layout/PublicFooter";
 import { WhatsAppButton } from "@/components/layout/WhatsAppButton";
 import { CartToast } from "@/components/public/CartToast";
 import { ProductCard } from "@/components/public/ProductCard";
+import { HeroBannerCarousel } from "@/components/public/HeroBannerCarousel";
 import { EmptyState } from "@/components/common/EmptyState";
 import { Container } from "@/components/common/SectionHeader";
 import { getTopLevelCategories as dbGetTopLevelCategories } from "@/lib/db/categories";
 import { getProductsByCategoryIds as dbGetProductsByCategoryIds } from "@/lib/db/products";
 import { getActiveAnnouncements } from "@/lib/db/announcements";
+import { getActiveBanners } from "@/lib/db/banners";
 import { mockCategories } from "@/data/mock-categories";
 import { getProductsByCategoryIds as mockGetProductsByCategoryIds } from "@/data/mock-products";
-import type { Category, Product, Announcement } from "@/types";
+import type { Category, Product, Announcement, HomeBanner } from "@/types";
 
 export default async function HomePage() {
   let categories: Category[];
@@ -34,6 +36,13 @@ export default async function HomePage() {
     announcements = [];
   }
 
+  let banners: HomeBanner[] = [];
+  try {
+    banners = await getActiveBanners();
+  } catch {
+    banners = [];
+  }
+
   const sections = categories
     .map((cat) => ({ category: cat, products: products.filter((p) => p.category_id === cat.id) }))
     .filter((s) => s.products.length > 0);
@@ -44,6 +53,12 @@ export default async function HomePage() {
       <main className="pt-24">
         <div className="pt-8 pb-16">
           <Container>
+            {banners.length > 0 && (
+              <div className="mb-10 sm:mb-14">
+                <HeroBannerCarousel banners={banners} />
+              </div>
+            )}
+
             <div className="mb-4 text-center">
               <h1 className="text-3xl md:text-5xl font-extrabold uppercase text-dark-text mb-2 tracking-wide">Todos os produtos</h1>
               <p className="text-sm text-muted/70">

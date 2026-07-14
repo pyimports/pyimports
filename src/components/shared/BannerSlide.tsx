@@ -111,14 +111,14 @@ export const BannerSlide = ({
 
       {/* Texto — renderizado apenas se existir */}
       {(title || subtitle) && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-5 sm:px-8 py-20 sm:py-24">
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 sm:px-8 py-4 sm:py-6">
           {title && (
-            <h2 className="text-3xl sm:text-5xl lg:text-7xl font-bold text-white leading-tight mb-3 sm:mb-4 tracking-tight drop-shadow-lg">
+            <h2 className="text-lg sm:text-3xl lg:text-4xl font-bold text-white leading-tight mb-1 sm:mb-2 tracking-tight drop-shadow-lg">
               {title}
             </h2>
           )}
           {subtitle && (
-            <p className="text-base sm:text-xl text-white/80 max-w-2xl mx-auto leading-relaxed drop-shadow">
+            <p className="text-xs sm:text-base text-white/80 max-w-2xl mx-auto leading-relaxed drop-shadow">
               {subtitle}
             </p>
           )}

@@ -186,10 +186,11 @@ function BannerPreview({ form, mode }: { form: FormState; mode: "desktop" | "mob
   const isDesktop = mode === "desktop";
   const containerClass = isDesktop ? "w-full" : "w-48 mx-auto";
 
-  // Mesmas proporções usadas na Home: 1920×700 desktop, 1080×1350 mobile
+  // Mesmas proporções usadas na Home: 1800×600 desktop, 1280×720 mobile —
+  // banner contido e curto, não ocupa a tela inteira (nem no PC nem no celular).
   const aspectStyle = isDesktop
-    ? { aspectRatio: "1920 / 700" }
-    : { aspectRatio: "1080 / 1350" };
+    ? { aspectRatio: "1800 / 600" }
+    : { aspectRatio: "1280 / 720" };
 
   return (
     <div className={containerClass}>
@@ -217,7 +218,7 @@ function BannerPreview({ form, mode }: { form: FormState; mode: "desktop" | "mob
         )}
       </div>
       <p className="text-xs text-muted text-center mt-1.5">
-        {isDesktop ? "Desktop · 1920×700px recomendado" : "Mobile · 1080×1350px recomendado"}
+        {isDesktop ? "Desktop · 1800×600px recomendado" : "Mobile · 1280×720px recomendado"}
       </p>
     </div>
   );
@@ -579,7 +580,7 @@ export const BannersClient = ({ initialBanners, categoryOptions, productOptions 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <UploadArea
               label="Imagem Desktop (obrigatória)"
-              hint="1920×700px recomendado"
+              hint="1800×600px recomendado"
               imageUrl={form.image_url}
               uploading={uploadingD}
               onFile={makeFileHandler("desktop")}
@@ -587,7 +588,7 @@ export const BannersClient = ({ initialBanners, categoryOptions, productOptions 
             />
             <UploadArea
               label="Imagem Mobile (opcional)"
-              hint="1080×1350px recomendado"
+              hint="1280×720px recomendado"
               imageUrl={form.image_mobile_url}
               uploading={uploadingM}
               onFile={makeFileHandler("mobile")}

@@ -53,13 +53,15 @@ export const HeroBannerCarousel = ({ banners }: HeroBannerCarouselProps) => {
 
   return (
     /*
-     * aspect-[4/5]         → proporção 1080×1350 em mobile (portrait)
-     * sm:aspect-[1920/700] → proporção 1920×700  em desktop (landscape)
-     * Essas são as mesmas proporções usadas no BannerPreview do admin,
-     * garantindo que o que você vê no admin é idêntico ao site publicado.
+     * aspect-[16/9]  → proporção 1280×720 em mobile — faixa curta, não domina a tela
+     * sm:aspect-[3/1] → proporção 1800×600 em desktop — mesma ideia, mais larga
+     * Contido dentro do Container da Home (não é full-bleed) e com cantos
+     * arredondados, igual aos outros cards do site. Essas são as mesmas
+     * proporções usadas no BannerPreview do admin, garantindo que o que você
+     * vê no admin é idêntico ao site publicado.
      */
     <section
-      className="relative aspect-[4/5] sm:aspect-[1920/700] overflow-hidden select-none"
+      className="relative aspect-[16/9] sm:aspect-[3/1] overflow-hidden select-none rounded-2xl border border-dark-border"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onTouchStart={handleTouchStart}
