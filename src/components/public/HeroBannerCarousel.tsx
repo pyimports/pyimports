@@ -40,6 +40,10 @@ export const HeroBannerCarousel = ({ banners }: HeroBannerCarouselProps) => {
     touchStartY.current = e.touches[0].clientY;
   };
 
+  // Em telas de toque, o navegador às vezes dispara um mouseenter sintético
+  // sem o mouseleave correspondente (emulação de :hover) — o autoplay ficava
+  // pausado pra sempre depois do primeiro toque. Garante que nunca fica
+  // travado em "pausado" por causa disso.
   const handleTouchEnd = (e: React.TouchEvent) => {
     const dx = touchStartX.current - e.changedTouches[0].clientX;
     const dy = touchStartY.current - e.changedTouches[0].clientY;
@@ -47,6 +51,7 @@ export const HeroBannerCarousel = ({ banners }: HeroBannerCarouselProps) => {
       e.preventDefault();
       dx > 0 ? next() : prev();
     }
+    setPaused(false);
   };
 
   if (total === 0) return null;
