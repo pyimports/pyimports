@@ -106,23 +106,25 @@ export const BannerSlide = ({
         <img src={effMobileImage} alt={title ?? "Banner"} style={mobileImgStyle} />
       </div>
 
-      {/* Overlay de legibilidade */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/30 to-black/65" />
-
-      {/* Texto — renderizado apenas se existir */}
+      {/* Overlay de legibilidade — só quando há título/subtítulo por cima da
+          imagem. Banners com o texto já "assado" na própria arte (caso mais
+          comum agora) não devem ficar escurecidos à toa. */}
       {(title || subtitle) && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 sm:px-8 py-4 sm:py-6">
-          {title && (
-            <h2 className="text-lg sm:text-3xl lg:text-4xl font-bold text-white leading-tight mb-1 sm:mb-2 tracking-tight drop-shadow-lg">
-              {title}
-            </h2>
-          )}
-          {subtitle && (
-            <p className="text-xs sm:text-base text-white/80 max-w-2xl mx-auto leading-relaxed drop-shadow">
-              {subtitle}
-            </p>
-          )}
-        </div>
+        <>
+          <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/30 to-black/65" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 sm:px-8 py-4 sm:py-6">
+            {title && (
+              <h2 className="text-lg sm:text-3xl lg:text-4xl font-bold text-white leading-tight mb-1 sm:mb-2 tracking-tight drop-shadow-lg">
+                {title}
+              </h2>
+            )}
+            {subtitle && (
+              <p className="text-xs sm:text-base text-white/80 max-w-2xl mx-auto leading-relaxed drop-shadow">
+                {subtitle}
+              </p>
+            )}
+          </div>
+        </>
       )}
 
       {/* Faixa de promoção por quantidade — calculada do produto vinculado */}
