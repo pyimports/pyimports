@@ -98,7 +98,8 @@ export function ProdutosClient({ initialProducts, categoryOptions }: Props) {
       setOptimisticProducts((prev) =>
         prev.map((p) => (p.id === id ? { ...p, [field]: !current } : p))
       );
-      await toggleProductField(id, field, !current);
+      const result = await toggleProductField(id, field, !current);
+      if (result.error) setError(result.error);
     });
   };
 

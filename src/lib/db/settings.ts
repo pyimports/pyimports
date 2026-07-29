@@ -10,6 +10,9 @@ export interface PublicStoreSettings {
   whatsapp_default_message: string;
   email?: string;
   address?: string;
+  // Fração (0.25 = 25%) — convertida a partir do inteiro salvo no banco,
+  // que é o que o admin de fato digita (25, não 0.25).
+  insurance_percentage: number;
 }
 
 function toPublicSettings(row: DbStoreSettingsPublic): PublicStoreSettings {
@@ -20,6 +23,7 @@ function toPublicSettings(row: DbStoreSettingsPublic): PublicStoreSettings {
     whatsapp_default_message: row.whatsapp_default_message,
     email: row.email ?? undefined,
     address: row.address ?? undefined,
+    insurance_percentage: Number(row.insurance_percentage) / 100,
   };
 }
 
@@ -27,6 +31,7 @@ const FALLBACK_PUBLIC_SETTINGS: PublicStoreSettings = {
   store_name: "PYimports",
   whatsapp_number: "5511999999999",
   whatsapp_default_message: "Olá! Vim pela loja e tenho uma dúvida.",
+  insurance_percentage: 0.25,
 };
 
 // Leitura pública (anon) — usada em Server Components do site público.
@@ -37,7 +42,7 @@ export const getPublicStoreSettings = cache(async (): Promise<PublicStoreSetting
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("store_settings_public")
-      .select("store_name, logo_url, whatsapp_number, whatsapp_default_message, email, address")
+      .select("store_name, logo_url, whatsapp_number, whatsapp_default_message, email, address, insurance_percentage")
       .eq("lock", true)
       .single();
 
@@ -56,6 +61,8 @@ export interface AdminStoreSettings {
   email?: string;
   address?: string;
   cnpj_cpf?: string;
+  // Pontos percentuais inteiros (25 = 25%) — o que o admin digita no formulário.
+  insurance_percentage: number;
   maintenance_mode: boolean;
 }
 
@@ -82,6 +89,7 @@ export async function getAdminStoreSettings(): Promise<AdminStoreSettings> {
     email: p.email ?? undefined,
     address: p.address ?? undefined,
     cnpj_cpf: p.cnpj_cpf ?? undefined,
+    insurance_percentage: Number(p.insurance_percentage),
     maintenance_mode: s.maintenance_mode,
   };
 }
@@ -91,7 +99,7 @@ function toAdminProfile(row: DbAdminProfile): AdminProfile {
     id: row.id,
     email: row.email,
     name: row.name,
-    role: row.role as "owner" | "manager",
+    role: row.role as "owner" | "manager" | "viewer",
     avatar_url: row.avatar_url ?? undefined,
     created_at: row.created_at,
     last_login: row.last_login ?? undefined,

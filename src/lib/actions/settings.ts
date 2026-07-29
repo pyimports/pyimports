@@ -24,6 +24,7 @@ export interface StoreSettingsFormData {
   whatsapp_number: string;
   whatsapp_default_message: string;
   logo_url: string;
+  insurance_percentage: number;
   maintenance_mode: boolean;
 }
 
@@ -32,6 +33,14 @@ export async function updateStoreSettings(
 ): Promise<{ error: string } | { ok: true }> {
   const guard = await requireAdminWrite();
   if ("error" in guard) return guard;
+
+  if (
+    !Number.isFinite(data.insurance_percentage) ||
+    data.insurance_percentage < 0 ||
+    data.insurance_percentage > 100
+  ) {
+    return { error: "A porcentagem do seguro precisa ser um número entre 0 e 100." };
+  }
 
   const service = createServiceClient();
 
@@ -45,6 +54,7 @@ export async function updateStoreSettings(
       whatsapp_number: data.whatsapp_number,
       whatsapp_default_message: data.whatsapp_default_message,
       logo_url: data.logo_url || null,
+      insurance_percentage: data.insurance_percentage,
       updated_at: new Date().toISOString(),
     })
     .eq("lock", true);

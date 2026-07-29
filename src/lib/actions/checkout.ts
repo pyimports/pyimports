@@ -1,8 +1,9 @@
 "use server";
 
 import { createServiceClient } from "@/lib/supabase/server";
-import { resolveBasePrice, calculateQuantityDiscountPrice, INSURANCE_PERCENTAGE } from "@/lib/pricing";
+import { resolveBasePrice, calculateQuantityDiscountPrice } from "@/lib/pricing";
 import { createPaymentPreferenceForOrder } from "@/lib/payments/create-preference";
+import { getPublicStoreSettings } from "@/lib/db/settings";
 import { digitsOnly, isValidCpf } from "@/lib/cpf";
 
 // ---------------------------------------------------------------------------
@@ -331,10 +332,11 @@ export async function createOrder(
     const shippingValue = 0;
 
     // 1c. Seguro da mercadoria — nunca usa o valor enviado pelo cliente, recalcula
-    // como % do subtotal resolvido acima.
+    // como % (configurada pelo admin) do subtotal resolvido acima.
     const insuranceEnabled = !!data.insurance_enabled;
+    const { insurance_percentage } = await getPublicStoreSettings();
     const insuranceValue = insuranceEnabled
-      ? Number((subtotalPix * INSURANCE_PERCENTAGE).toFixed(2))
+      ? Number((subtotalPix * insurance_percentage).toFixed(2))
       : 0;
 
     // 2. Revalida o cupom contra o banco (nunca usa o desconto enviado pelo cliente)

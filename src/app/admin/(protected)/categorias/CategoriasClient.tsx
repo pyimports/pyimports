@@ -42,7 +42,8 @@ export function CategoriasClient({ initialCategories, parentOptions }: Props) {
       setOptimisticCategories((prev) =>
         prev.map((c) => (c.id === id ? { ...c, [field]: !current } : c))
       );
-      await toggleCategoryField(id, field, !current);
+      const result = await toggleCategoryField(id, field, !current);
+      if (result.error) alert(result.error);
     });
   };
 

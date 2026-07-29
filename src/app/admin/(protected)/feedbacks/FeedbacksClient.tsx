@@ -25,7 +25,11 @@ export function FeedbacksClient({ initialReviews, productOptions }: Props) {
   const handleToggle = (id: string, current: boolean) => {
     setReviews((prev) => prev.map((r) => (r.id === id ? { ...r, is_active: !current } : r)));
     startTransition(async () => {
-      await toggleReviewActive(id, !current);
+      const result = await toggleReviewActive(id, !current);
+      if (result.error) {
+        alert(result.error);
+        setReviews((prev) => prev.map((r) => (r.id === id ? { ...r, is_active: current } : r)));
+      }
     });
   };
 

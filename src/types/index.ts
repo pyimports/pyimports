@@ -598,6 +598,10 @@ export interface CartState {
   coupon_discount: number;
   coupon_type?: CouponType;
   insurance_enabled: boolean;
+  // Fração (0.25 = 25%) — sincronizada a partir das configurações da loja
+  // (ver CartSettingsSync). O valor inicial é só um fallback antes da
+  // primeira sincronização.
+  insurance_percentage: number;
 }
 
 // =============================================

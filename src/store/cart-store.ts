@@ -44,6 +44,7 @@ interface CartActions {
   setCoupon:        (code: string, discount: number, type: CouponType) => void;
   clearCoupon:      () => void;
   setInsurance:     (enabled: boolean) => void;
+  setInsurancePercentage: (percentage: number) => void;
   getSubtotal:      () => number;
   getShippingValue: () => number;
   getCouponDiscount:() => number;
@@ -60,6 +61,7 @@ const initialState: CartState = {
   coupon_discount:   0,
   coupon_type:       undefined,
   insurance_enabled: false,
+  insurance_percentage: INSURANCE_PERCENTAGE,
 };
 
 export const useCartStore = create<CartState & CartActions>()(
@@ -141,6 +143,7 @@ export const useCartStore = create<CartState & CartActions>()(
         set({ coupon_code: null, coupon_discount: 0, coupon_type: undefined }),
 
       setInsurance: (enabled) => set({ insurance_enabled: enabled }),
+      setInsurancePercentage: (percentage) => set({ insurance_percentage: percentage }),
 
       getSubtotal: () =>
         get().items.reduce((acc, item) => acc + item.price_pix * item.quantity, 0),
@@ -159,9 +162,9 @@ export const useCartStore = create<CartState & CartActions>()(
       },
 
       getInsuranceValue: () => {
-        const { insurance_enabled } = get();
+        const { insurance_enabled, insurance_percentage } = get();
         if (!insurance_enabled) return 0;
-        return get().getSubtotal() * INSURANCE_PERCENTAGE;
+        return get().getSubtotal() * insurance_percentage;
       },
 
       getTotalPix: () => {

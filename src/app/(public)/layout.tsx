@@ -3,6 +3,7 @@ import { PublicNavbar } from "@/components/layout/PublicNavbar";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { WhatsAppButton } from "@/components/layout/WhatsAppButton";
 import { CartToast } from "@/components/public/CartToast";
+import { CartSettingsSync } from "@/components/public/CartSettingsSync";
 import { MaintenanceScreen } from "@/components/public/MaintenanceScreen";
 import { getTopLevelCategories as dbGetTopLevelCategories } from "@/lib/db/categories";
 import { getActiveAnnouncements } from "@/lib/db/announcements";
@@ -52,6 +53,7 @@ export default async function PublicLayout({
       <PublicFooter categories={categories} whatsappNumber={settings.whatsapp_number} />
       <WhatsAppButton phone={settings.whatsapp_number} message={settings.whatsapp_default_message} />
       <CartToast />
+      <CartSettingsSync insurancePercentage={settings.insurance_percentage} />
     </>
   );
 }

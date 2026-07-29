@@ -922,6 +922,7 @@ export type Database = {
           email:            string | null;
           address:          string | null;
           cnpj_cpf:         string | null;
+          insurance_percentage: number;
           meta_title:       string | null;
           meta_description: string | null;
           updated_at:       string;
@@ -937,6 +938,7 @@ export type Database = {
           email?:            string | null;
           address?:          string | null;
           cnpj_cpf?:         string | null;
+          insurance_percentage?: number;
           meta_title?:       string | null;
           meta_description?: string | null;
           updated_at?:       string;

@@ -3,14 +3,13 @@
 import React from "react";
 import { ShieldCheck } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
-import { INSURANCE_PERCENTAGE } from "@/lib/pricing";
 import { useCartStore } from "@/store/cart-store";
 
 export const InsuranceOption = () => {
-  const { insurance_enabled, setInsurance, getItemCount, getSubtotal } = useCartStore();
+  const { insurance_enabled, insurance_percentage, setInsurance, getItemCount, getSubtotal } = useCartStore();
   const itemCount = getItemCount();
   const subtotal = getSubtotal();
-  const insuranceTotal = subtotal * INSURANCE_PERCENTAGE;
+  const insuranceTotal = subtotal * insurance_percentage;
 
   return (
     <label
@@ -47,12 +46,12 @@ export const InsuranceOption = () => {
         </div>
         <p className="text-xs text-muted mt-1 leading-relaxed">
           Se o pacote tiver algum problema ou extravio, reenviamos a mercadoria.{" "}
-          {Math.round(INSURANCE_PERCENTAGE * 100)}% do valor da compra.
+          {Math.round(insurance_percentage * 100)}% do valor da compra.
         </p>
         {itemCount > 0 && (
           <p className="text-xs mt-1.5">
             <span className="text-muted">
-              {Math.round(INSURANCE_PERCENTAGE * 100)}% de {formatCurrency(subtotal)} —{" "}
+              {Math.round(insurance_percentage * 100)}% de {formatCurrency(subtotal)} —{" "}
             </span>
             <span className={insurance_enabled ? "text-accent font-semibold" : "text-muted"}>
               {formatCurrency(insuranceTotal)}
