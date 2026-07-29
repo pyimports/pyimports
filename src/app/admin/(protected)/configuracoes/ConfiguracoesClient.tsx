@@ -144,15 +144,19 @@ export function ConfiguracoesClient({ initialSettings, initialAdmins, currentAdm
               <Input label="CNPJ / CPF" placeholder="00.000.000/0001-00" value={form.cnpj_cpf} onChange={(e) => set("cnpj_cpf", e.target.value)} />
             </SectionCard>
             <SectionCard title="Seguro da mercadoria">
-              <Input
-                label="Porcentagem do seguro (%)"
-                type="number"
-                min={0}
-                max={100}
-                step={0.1}
-                value={form.insurance_percentage}
-                onChange={(e) => set("insurance_percentage", Number(e.target.value))}
-              />
+              <div className="max-w-[160px]">
+                <Input
+                  label="Porcentagem do seguro"
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.1}
+                  rightIcon={<span className="text-xs">%</span>}
+                  className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  value={form.insurance_percentage}
+                  onChange={(e) => set("insurance_percentage", Number(e.target.value))}
+                />
+              </div>
               <p className="text-xs text-muted">
                 Aplicada sobre o subtotal da compra quando o cliente ativa o seguro no carrinho —
                 acréscimo de {form.insurance_percentage}% no valor final do pedido.
