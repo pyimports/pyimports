@@ -102,8 +102,8 @@ export default function CheckoutPage() {
                 <ShieldCheck size={18} className="text-accent flex-shrink-0" />
                 <p className="text-sm text-dark-text">
                   Você escolhe entre <span className="font-semibold">Pix</span> ou{" "}
-                  <span className="font-semibold">cartão de crédito</span> na próxima tela, numa página segura —
-                  aprovação automática.
+                  <span className="font-semibold">cartão de crédito</span> na próxima tela, sem sair do nosso
+                  site — aprovação automática.
                 </p>
               </div>
             </div>
