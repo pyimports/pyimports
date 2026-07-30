@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, ShieldCheck } from "lucide-react";
 import { CheckoutSteps } from "@/components/public/CheckoutSteps";
 import { Container } from "@/components/common/SectionHeader";
 import { Button } from "@/components/common/Button";
@@ -96,25 +96,15 @@ export default function CheckoutPage() {
             </div>
 
             {/* Payment method */}
-            <div className="bg-dark-surface rounded-2xl border border-dark-border p-6 space-y-4">
+            <div className="bg-dark-surface rounded-2xl border border-dark-border p-6 space-y-3">
               <h2 className="text-base font-bold text-dark-text">Forma de pagamento</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="flex items-center gap-3 p-4 rounded-xl border-2 border-accent bg-accent/5 cursor-pointer">
-                  <div className="w-4 h-4 rounded-full border-2 border-accent flex items-center justify-center">
-                    <div className="w-2 h-2 rounded-full bg-accent" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-dark-text">Pix</div>
-                    <div className="text-xs text-success">Aprovação imediata · Melhor preço</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-4 rounded-xl border border-dark-border cursor-pointer hover:border-accent/40 transition-colors opacity-60">
-                  <div className="w-4 h-4 rounded-full border-2 border-dark-border-light" />
-                  <div>
-                    <div className="text-sm font-semibold text-dark-text">Cartão de crédito</div>
-                    <div className="text-xs text-muted">Em breve</div>
-                  </div>
-                </div>
+              <div className="flex items-center gap-3 p-4 rounded-xl border border-accent/40 bg-accent/5">
+                <ShieldCheck size={18} className="text-accent flex-shrink-0" />
+                <p className="text-sm text-dark-text">
+                  Você escolhe entre <span className="font-semibold">Pix</span> ou{" "}
+                  <span className="font-semibold">cartão de crédito</span> na próxima tela, numa página segura —
+                  aprovação automática.
+                </p>
               </div>
             </div>
 
@@ -146,7 +136,7 @@ export default function CheckoutPage() {
               </div>
               <div className="border-t border-dark-border pt-3">
                 <div className="flex justify-between">
-                  <span className="text-sm font-semibold text-dark-text">Total no Pix</span>
+                  <span className="text-sm font-semibold text-dark-text">Total a pagar</span>
                   <span className="text-lg font-bold text-accent">{formatCurrency(total)}</span>
                 </div>
               </div>

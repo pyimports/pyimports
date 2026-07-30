@@ -176,13 +176,14 @@ export function ConfiguracoesClient({ initialSettings, initialAdmins, currentAdm
 
         <TabContent value="pagamentos" active={activeTab}>
           <div className="space-y-4 mt-6">
-            <SectionCard title="Pagamento via PicPay">
+            <SectionCard title="Pagamento via Zendry">
               <p className="text-sm text-muted leading-relaxed">
-                O checkout gera automaticamente uma cobrança PicPay para cada pedido — não há
-                configuração manual de chave Pix ou cartão nesta tela.
+                O checkout gera automaticamente um link de pagamento hospedado (Zendry) para cada
+                pedido — o cliente escolhe Pix ou cartão na página deles. Não há configuração manual
+                de chave Pix ou cartão nesta tela.
               </p>
               <p className="text-xs text-muted">
-                O token de integração do PicPay fica nas variáveis de ambiente do servidor, não aqui.
+                As credenciais de integração do Zendry ficam nas variáveis de ambiente do servidor, não aqui.
               </p>
             </SectionCard>
           </div>
