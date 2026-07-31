@@ -3,6 +3,7 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { processPaymentResult } from "@/lib/payments/process";
 import { getZendryAccessToken, ZENDRY_API_BASE } from "@/lib/payments/zendry-provider";
+import { computeCardTotalForInstallments } from "@/lib/pricing";
 import { digitsOnly } from "@/lib/cpf";
 
 // Pagamento por cartão via Zendry (POST /v1/card_payments) — diferente do
@@ -85,6 +86,11 @@ export async function payWithCard(
   if (orderError || !order) return { error: "Pedido não encontrado." };
   if (order.payment_status === "confirmed") return { ok: true }; // já pago — idempotente
 
+  // Valor real cobrado no cartão — Pix + taxa da bandeira pro número de
+  // parcelas escolhido (tabela em src/lib/pricing.ts). Nunca confia num total
+  // vindo do cliente; sempre recalcula aqui a partir do pedido.
+  const cardTotal = computeCardTotalForInstallments(Number(order.total), input.installments);
+
   let token: string;
   try {
     token = await getZendryAccessToken();
@@ -103,7 +109,7 @@ export async function payWithCard(
       body: JSON.stringify({
         card_payment: {
           external_id: input.orderId,
-          amount: Math.round(Number(order.total) * 100),
+          amount: Math.round(cardTotal * 100),
           currency: "BRL",
           payment_type: "CREDIT",
           card_number: digitsOnly(input.cardNumber),

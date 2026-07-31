@@ -16,6 +16,7 @@ import { generateStoreWhatsAppLink } from "@/lib/whatsapp";
 import { maskCpf, maskCep } from "@/lib/utils";
 import { payWithCard } from "@/lib/actions/card-payment";
 import { PAYMENT_MODE } from "@/lib/payments/mode";
+import { computeCardTotalForInstallments, MAX_CARD_INSTALLMENTS } from "@/lib/pricing";
 
 interface PagamentoClientProps {
   orderId: string;
@@ -70,11 +71,6 @@ function maskExpiry(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 4);
   return digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
 }
-
-const INSTALLMENT_OPTIONS = Array.from({ length: 12 }, (_, i) => ({
-  value: String(i + 1),
-  label: i === 0 ? "1x (à vista)" : `${i + 1}x`,
-}));
 
 const CARD_BRAND_OPTIONS = [
   { value: "VISA", label: "Visa" },
@@ -166,6 +162,21 @@ export function PagamentoClient({
   const [cardStep, setCardStep] = useState<"idle" | "3ds" | "paying">("idle");
   const [cardError, setCardError] = useState("");
 
+  // Total real no cartão pra quantidade de parcelas escolhida — taxa da
+  // adquirente sobe conforme parcela (ver src/lib/pricing.ts). Recalculado
+  // de novo no servidor antes de cobrar (card-payment.ts nunca confia nisso).
+  const cardTotal = computeCardTotalForInstallments(total, Number(installments));
+  const installmentOptions = Array.from({ length: MAX_CARD_INSTALLMENTS }, (_, i) => {
+    const n = i + 1;
+    const totalForN = computeCardTotalForInstallments(total, n);
+    return {
+      value: String(n),
+      label: n === 1
+        ? `À vista — ${formatCurrency(totalForN)}`
+        : `${n}x de ${formatCurrency(totalForN / n)} (${formatCurrency(totalForN)})`,
+    };
+  });
+
   const handlePayWithCard = async (e: React.FormEvent) => {
     e.preventDefault();
     setCardError("");
@@ -199,7 +210,7 @@ export function PagamentoClient({
 
       const threedsResult = await window.ZendrySDKThreeds.init_threeds({
         token: tokenJson.token,
-        amount: Math.round(total * 100),
+        amount: Math.round(cardTotal * 100),
         payment_form: {
           network_preference: cardBrand,
           account_type: "CREDIT",
@@ -520,13 +531,13 @@ export function PagamentoClient({
                   label="Parcelas"
                   value={installments}
                   onChange={setInstallments}
-                  options={INSTALLMENT_OPTIONS}
+                  options={installmentOptions}
                 />
 
                 {cardError && <p className="text-sm text-danger">{cardError}</p>}
 
                 <Button type="submit" variant="accent" fullWidth size="lg" isLoading={cardSubmitting}>
-                  {cardStep === "3ds" ? "Confirmando segurança do cartão..." : cardStep === "paying" ? "Processando pagamento..." : `Pagar ${formatCurrency(total)}`}
+                  {cardStep === "3ds" ? "Confirmando segurança do cartão..." : cardStep === "paying" ? "Processando pagamento..." : `Pagar ${formatCurrency(cardTotal)}`}
                 </Button>
               </form>
             )}

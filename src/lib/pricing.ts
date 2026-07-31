@@ -5,15 +5,50 @@ import type { PriceTier } from "@/types";
 // Compartilhado entre client (cart-store) e server (checkout) para nunca divergir.
 export const INSURANCE_PERCENTAGE = 0.25;
 
-// Cartão de crédito — markup fixo de 18% sobre o preço no Pix, aplicado em
-// TODOS os produtos. Calculado sempre no servidor (createProduct/updateProduct
-// em src/lib/actions/products.ts), nunca digitado manualmente pelo admin —
-// assim nunca diverge da regra, mesmo se o formulário mandar outra coisa.
-export const CARD_MARKUP_PERCENTAGE = 0.18;
+// Cartão de crédito — taxas reais da adquirente (PYX Gate, tabela Mastercard/
+// "Bandeiras padrão" — a mais cara, usada como referência única pra não gerar
+// prejuízo com nenhuma bandeira). A taxa sobe conforme o número de parcelas,
+// por isso NÃO é um markup fixo: índice 0 = à vista (1x), índice 13 = 14x.
+// Calculado sempre no servidor, nunca digitado manualmente pelo admin.
+export const CARD_INSTALLMENT_RATES: number[] = [
+  0.0685, // 1x  (à vista)
+  0.0815, // 2x
+  0.0884, // 3x
+  0.0954, // 4x
+  0.1024, // 5x
+  0.1095, // 6x
+  0.1186, // 7x
+  0.1259, // 8x
+  0.1331, // 9x
+  0.1405, // 10x
+  0.1479, // 11x
+  0.1554, // 12x
+  0.1629, // 13x
+  0.1705, // 14x
+];
 
+export const MAX_CARD_INSTALLMENTS = CARD_INSTALLMENT_RATES.length;
+
+export function getCardInstallmentRate(installments: number): number {
+  const idx = Math.min(Math.max(1, Math.round(installments) || 1), MAX_CARD_INSTALLMENTS) - 1;
+  return CARD_INSTALLMENT_RATES[idx];
+}
+
+// Preço "no cartão" mostrado na vitrine (PDP, card do produto, carrinho) —
+// sempre a taxa à vista (1x), a referência mais barata da tabela.
 export function computeCardPrice(pricePix: number): number {
   const safePricePix = Math.max(0, Number(pricePix) || 0);
-  return Math.round(safePricePix * (1 + CARD_MARKUP_PERCENTAGE) * 100) / 100;
+  return Math.round(safePricePix * (1 + CARD_INSTALLMENT_RATES[0]) * 100) / 100;
+}
+
+// Total cobrado de verdade no cartão — o valor do pedido (base Pix) com a
+// taxa da quantidade de parcelas escolhida na tela de pagamento. Usado tanto
+// no preview do formulário (client) quanto no valor real cobrado (server,
+// card-payment.ts) — nunca confia no total que o cliente mandar.
+export function computeCardTotalForInstallments(pixTotal: number, installments: number): number {
+  const safePixTotal = Math.max(0, Number(pixTotal) || 0);
+  const rate = getCardInstallmentRate(installments);
+  return Math.round(safePixTotal * (1 + rate) * 100) / 100;
 }
 
 // ── Resolve o preço base efetivo para 1 unidade ──────────────────────────────
