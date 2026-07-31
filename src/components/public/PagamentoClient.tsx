@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { QRCodeSVG } from "qrcode.react";
 import { Copy, CheckCircle2, MessageCircle, Clock, Loader2, ExternalLink, ShieldCheck, CreditCard } from "lucide-react";
 import { CheckoutSteps } from "@/components/public/CheckoutSteps";
 import { Container } from "@/components/common/SectionHeader";
@@ -198,13 +199,35 @@ export function PagamentoClient({
             {activeTab === "pix" || !CARD_PAYMENT_ENABLED ? (
               <>
                 {/* QR Code */}
-                {pixQrUrl && (
-                  <div className="flex flex-col items-center gap-6 p-8 bg-dark-surface rounded-2xl border border-dark-border mb-6">
-                    <div className="w-48 h-48 bg-white rounded-2xl flex items-center justify-center overflow-hidden">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={pixQrUrl} alt="QR Code Pix" className="w-full h-full object-contain" />
+                {(pixCode || pixQrUrl) && (
+                  <div className="relative flex flex-col items-center gap-6 p-8 bg-dark-surface rounded-3xl border border-dark-border mb-6 overflow-hidden">
+                    {/* glow decorativo */}
+                    <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-72 h-72 rounded-full bg-accent/20 blur-3xl" />
+
+                    <div className="relative p-5 rounded-3xl bg-gradient-to-br from-accent to-accent-light shadow-[0_8px_30px_-4px_rgba(59,130,246,0.45)]">
+                      <div className="p-4 bg-white rounded-2xl">
+                        {pixCode ? (
+                          <QRCodeSVG
+                            value={pixCode}
+                            size={280}
+                            level="H"
+                            fgColor="#0f172a"
+                            bgColor="#ffffff"
+                            imageSettings={{
+                              src: "/icon.png",
+                              height: 56,
+                              width: 56,
+                              excavate: true,
+                            }}
+                          />
+                        ) : (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={pixQrUrl ?? undefined} alt="QR Code Pix" className="w-[280px] h-[280px] object-contain" />
+                        )}
+                      </div>
                     </div>
-                    <p className="text-sm text-muted text-center">Escaneie o QR Code com o app do seu banco</p>
+
+                    <p className="relative text-sm text-muted text-center">Escaneie o QR Code com o app do seu banco</p>
                   </div>
                 )}
 
