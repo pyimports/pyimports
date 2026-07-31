@@ -5,6 +5,17 @@ import type { PriceTier } from "@/types";
 // Compartilhado entre client (cart-store) e server (checkout) para nunca divergir.
 export const INSURANCE_PERCENTAGE = 0.25;
 
+// Cartão de crédito — markup fixo de 18% sobre o preço no Pix, aplicado em
+// TODOS os produtos. Calculado sempre no servidor (createProduct/updateProduct
+// em src/lib/actions/products.ts), nunca digitado manualmente pelo admin —
+// assim nunca diverge da regra, mesmo se o formulário mandar outra coisa.
+export const CARD_MARKUP_PERCENTAGE = 0.18;
+
+export function computeCardPrice(pricePix: number): number {
+  const safePricePix = Math.max(0, Number(pricePix) || 0);
+  return Math.round(safePricePix * (1 + CARD_MARKUP_PERCENTAGE) * 100) / 100;
+}
+
 // ── Resolve o preço base efetivo para 1 unidade ──────────────────────────────
 // Retorna price_promotional quando há campanha ativa, senão price_pix.
 // É a única fonte de verdade para o preço de partida do desconto progressivo.

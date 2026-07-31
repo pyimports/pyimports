@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
 import { requireAdmin, requireAdminWrite } from "@/lib/auth/admin-guard";
+import { computeCardPrice } from "@/lib/pricing";
 import type { PriceTier, ProductSpecification, ProductFulfillmentType } from "@/types";
 import type { Json } from "@/types/database.types";
 
@@ -157,7 +158,7 @@ export async function createProduct(
       stock_item_id:       data.stock_item_id ?? null,
       category_id:         data.category_id,
       price_pix:           data.price_pix,
-      price_card:          data.price_card,
+      price_card:          computeCardPrice(data.price_pix),
       price_promotional:   data.price_promotional ?? null,
       promotional_active:  data.promotional_active,
       is_active:           data.is_active,
@@ -231,7 +232,7 @@ export async function updateProduct(
       stock_item_id:       data.stock_item_id ?? null,
       category_id:         data.category_id,
       price_pix:           data.price_pix,
-      price_card:          data.price_card,
+      price_card:          computeCardPrice(data.price_pix),
       price_promotional:   data.price_promotional ?? null,
       promotional_active:  data.promotional_active,
       is_active:           data.is_active,

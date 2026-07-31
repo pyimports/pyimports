@@ -16,6 +16,8 @@ import { ProductBadgeEditor } from "@/components/admin/ProductBadgeEditor";
 import { updateProduct, deleteProduct } from "@/lib/actions/products";
 import { saveMediaChanges } from "@/lib/actions/media";
 import { routes } from "@/lib/routes";
+import { formatCurrency } from "@/lib/formatters";
+import { computeCardPrice } from "@/lib/pricing";
 import type { ProductFormData } from "@/lib/actions/products";
 import type { AdminProduct } from "@/lib/db/admin";
 import type { UploadedMedia } from "@/components/admin/MediaUploader";
@@ -82,7 +84,8 @@ export function EditarProdutoForm({ product, categoryOptions }: Props) {
   const [isActive, setIsActive] = useState(product.is_active);
   const [shortDesc, setShortDesc] = useState(product.short_description);
   const [pricePix, setPricePix] = useState(product.price_pix.toString());
-  const [priceCard, setPriceCard] = useState(product.price_card.toString());
+  // Preço no cartão nunca é digitado — sempre 18% sobre o Pix (ver computeCardPrice).
+  const priceCard = computeCardPrice(parseFloat(pricePix) || 0);
   const [pricePromo, setPricePromo] = useState(
     product.price_promotional?.toString() ?? ""
   );
@@ -127,7 +130,6 @@ export function EditarProdutoForm({ product, categoryOptions }: Props) {
       isActive: product.is_active,
       shortDesc: product.short_description,
       pricePix: product.price_pix.toString(),
-      priceCard: product.price_card.toString(),
       pricePromo: product.price_promotional?.toString() ?? "",
       promotionalActive: product.promotional_active,
       quantityPricingEnabled: product.quantity_pricing_enabled,
@@ -145,7 +147,7 @@ export function EditarProdutoForm({ product, categoryOptions }: Props) {
 
   const currentSnapshot = JSON.stringify({
     name, slug, categoryId, isActive, shortDesc,
-    pricePix, priceCard, pricePromo, promotionalActive,
+    pricePix, pricePromo, promotionalActive,
     quantityPricingEnabled, priceTiers, allowWhatsapp, showIllustrativeBadge, fulfillmentType, badge,
     media: mediaItems
       .filter((m) => !m.uploading && !m.uploadError)
@@ -217,7 +219,7 @@ export function EditarProdutoForm({ product, categoryOptions }: Props) {
     category_id:         categoryId,
     display_order:       product.display_order,
     price_pix:           parseFloat(pricePix)  || 0,
-    price_card:          parseFloat(priceCard) || 0,
+    price_card:          priceCard,
     price_promotional:   parseFloat(pricePromo) || undefined,
     promotional_active:  promotionalActive,
     is_active:           isActive,
@@ -255,7 +257,7 @@ export function EditarProdutoForm({ product, categoryOptions }: Props) {
     stock_item_id:       product.stock_item_id ?? null,
     category_id:         categoryId,
     price_pix:           parseFloat(pricePix)  || 0,
-    price_card:          parseFloat(priceCard) || 0,
+    price_card:          priceCard,
     price_promotional:   parseFloat(pricePromo) || null,
     promotional_active:  promotionalActive,
     is_active:           isActive,
@@ -481,12 +483,15 @@ export function EditarProdutoForm({ product, categoryOptions }: Props) {
                 value={pricePix}
                 onChange={(e) => setPricePix(e.target.value)}
               />
-              <Input
-                label="Preço Cartão (R$)"
-                type="number"
-                value={priceCard}
-                onChange={(e) => setPriceCard(e.target.value)}
-              />
+              <div>
+                <Input
+                  label="Preço Cartão (R$)"
+                  value={formatCurrency(priceCard)}
+                  disabled
+                  readOnly
+                />
+                <HelpText text="Calculado automaticamente: Pix + 18%" />
+              </div>
               <div>
                 <Input
                   label="Preço anterior (R$)"
@@ -585,7 +590,7 @@ export function EditarProdutoForm({ product, categoryOptions }: Props) {
             name={name}
             short_description={shortDesc}
             price_pix={parseFloat(pricePix) || product.price_pix}
-            price_card={parseFloat(priceCard) || product.price_card}
+            price_card={priceCard}
             price_promotional={parseFloat(pricePromo) || undefined}
             promotional_active={promotionalActive}
             category_name={selectedCat?.label}

@@ -15,7 +15,8 @@ import { ProductBadgeEditor } from "@/components/admin/ProductBadgeEditor";
 import { createProduct, copyProductImagesForDraft } from "@/lib/actions/products";
 import { saveMediaChanges } from "@/lib/actions/media";
 import { routes } from "@/lib/routes";
-import { slugify } from "@/lib/formatters";
+import { slugify, formatCurrency } from "@/lib/formatters";
+import { computeCardPrice } from "@/lib/pricing";
 import type { ProductFormData, ProductDuplicationData } from "@/lib/actions/products";
 import type { UploadedMedia } from "@/components/admin/MediaUploader";
 import type { ProductBadgeValue } from "@/components/admin/ProductBadgeEditor";
@@ -117,7 +118,8 @@ export function NovoProdutoForm({ categoryOptions, duplicateFrom, duplicateFromI
   const [isActive, setIsActive] = useState(!isDuplicating);
   const [shortDesc, setShortDesc] = useState(duplicateFrom?.short_description ?? "");
   const [pricePix, setPricePix] = useState(duplicateFrom ? String(duplicateFrom.price_pix) : "");
-  const [priceCard, setPriceCard] = useState(duplicateFrom ? String(duplicateFrom.price_card) : "");
+  // Preço no cartão nunca é digitado — sempre 18% sobre o Pix (ver computeCardPrice).
+  const priceCard = computeCardPrice(parseFloat(pricePix) || 0);
   const [pricePromo, setPricePromo] = useState(
     duplicateFrom?.price_promotional != null ? String(duplicateFrom.price_promotional) : ""
   );
@@ -168,7 +170,7 @@ export function NovoProdutoForm({ categoryOptions, duplicateFrom, duplicateFromI
     category_id:         categoryId,
     display_order:       0,
     price_pix:           parseFloat(pricePix)  || 0,
-    price_card:          parseFloat(priceCard) || 0,
+    price_card:          priceCard,
     price_promotional:   parseFloat(pricePromo) || undefined,
     promotional_active:  promotionalActive,
     is_active:           true, // só preview visual no editor — não é salvo
@@ -202,7 +204,7 @@ export function NovoProdutoForm({ categoryOptions, duplicateFrom, duplicateFromI
     sku:                 slug.toUpperCase(),
     category_id:         categoryId,
     price_pix:           parseFloat(pricePix)  || 0,
-    price_card:          parseFloat(priceCard) || 0,
+    price_card:          priceCard,
     price_promotional:   parseFloat(pricePromo) || null,
     promotional_active:  promotionalActive,
     is_active:           publish ? true : false,
@@ -378,11 +380,11 @@ export function NovoProdutoForm({ categoryOptions, duplicateFrom, duplicateFromI
               <div>
                 <Input
                   label="Preço Cartão (R$)"
-                  type="number"
-                  value={priceCard}
-                  onChange={(e) => setPriceCard(e.target.value)}
-                  placeholder="0,00"
+                  value={formatCurrency(priceCard)}
+                  disabled
+                  readOnly
                 />
+                <HelpText text="Calculado automaticamente: Pix + 18%" />
               </div>
               <div>
                 <Input
@@ -482,7 +484,7 @@ export function NovoProdutoForm({ categoryOptions, duplicateFrom, duplicateFromI
               name={name || undefined}
               short_description={shortDesc}
               price_pix={parseFloat(pricePix) || 0}
-              price_card={parseFloat(priceCard) || 0}
+              price_card={priceCard}
               price_promotional={parseFloat(pricePromo) || undefined}
               promotional_active={promotionalActive}
               category_name={selectedCat?.label}
