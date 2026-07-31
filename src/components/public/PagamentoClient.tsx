@@ -40,6 +40,13 @@ const INSTALLMENT_OPTIONS = Array.from({ length: 12 }, (_, i) => ({
   label: i === 0 ? "1x (à vista)" : `${i + 1}x`,
 }));
 
+// A API do Zendry recusa qualquer pagamento de cartão sem 3DS ("Threeds
+// data is required") — confirmado testando de verdade. O formulário de
+// cartão já está pronto (src/lib/actions/card-payment.ts), mas fica
+// escondido da tela até o SDK de 3DS ser implementado, pra não oferecer uma
+// opção que sempre vai falhar pro cliente.
+const CARD_PAYMENT_ENABLED = false;
+
 export function PagamentoClient({
   orderId,
   orderNumber,
@@ -163,30 +170,32 @@ export function PagamentoClient({
 
         {hasPix ? (
           <>
-            {/* Seletor Pix / Cartão */}
-            <div className="flex gap-2 bg-dark-alt rounded-xl p-1 mb-6">
-              <button
-                onClick={() => setActiveTab("pix")}
-                className={[
-                  "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all",
-                  activeTab === "pix" ? "bg-dark-surface text-dark-text shadow-sm" : "text-muted hover:text-dark-text",
-                ].join(" ")}
-              >
-                Pix
-              </button>
-              <button
-                onClick={() => setActiveTab("card")}
-                className={[
-                  "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all",
-                  activeTab === "card" ? "bg-dark-surface text-dark-text shadow-sm" : "text-muted hover:text-dark-text",
-                ].join(" ")}
-              >
-                <CreditCard size={15} />
-                Cartão
-              </button>
-            </div>
+            {/* Seletor Pix / Cartão — cartão só aparece quando CARD_PAYMENT_ENABLED */}
+            {CARD_PAYMENT_ENABLED && (
+              <div className="flex gap-2 bg-dark-alt rounded-xl p-1 mb-6">
+                <button
+                  onClick={() => setActiveTab("pix")}
+                  className={[
+                    "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all",
+                    activeTab === "pix" ? "bg-dark-surface text-dark-text shadow-sm" : "text-muted hover:text-dark-text",
+                  ].join(" ")}
+                >
+                  Pix
+                </button>
+                <button
+                  onClick={() => setActiveTab("card")}
+                  className={[
+                    "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all",
+                    activeTab === "card" ? "bg-dark-surface text-dark-text shadow-sm" : "text-muted hover:text-dark-text",
+                  ].join(" ")}
+                >
+                  <CreditCard size={15} />
+                  Cartão
+                </button>
+              </div>
+            )}
 
-            {activeTab === "pix" ? (
+            {activeTab === "pix" || !CARD_PAYMENT_ENABLED ? (
               <>
                 {/* QR Code */}
                 {pixQrUrl && (
