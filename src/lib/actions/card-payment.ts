@@ -13,9 +13,26 @@ import { digitsOnly } from "@/lib/cpf";
 // nenhuma coluna/metadata (só os campos seguros da resposta: últimos
 // dígitos, bandeira, código de autorização).
 //
-// SEM 3DS por enquanto (decisão consciente, ver plano) — cartões que o banco
-// exigir autenticação adicional (status "waiting_3ds_authentication") vão
-// falhar com uma mensagem clara, até o SDK de 3DS ser implementado.
+// 3DS é obrigatório (confirmado testando de verdade: sem threeds_data a API
+// sempre recusa com "Threeds data is required") — o desafio roda no
+// navegador (ZendrySDKThreeds.init_threeds, ver PagamentoClient.tsx) e o
+// resultado (three_ds_data) chega pronto aqui, só repassado pra API.
+
+export interface CardPaymentThreedsData {
+  operation_session_id: string;
+  cavv: string;
+  xid: string;
+  eci: string;
+  secure_version: string;
+  directory_server_transaction_id: string;
+  three_ds_server_transaction_id: string;
+  ip_address: string;
+  user_agent_browser_value: string;
+  http_browser_language: string;
+  http_browser_screen_height: string;
+  http_browser_screen_width: string;
+  zip_code: string;
+}
 
 export interface CardPaymentInput {
   orderId: string;
@@ -25,6 +42,7 @@ export interface CardPaymentInput {
   cardHolderName: string;
   cardHolderDocument: string;
   installments: number;
+  threedsData: CardPaymentThreedsData;
 }
 
 interface ZendryCardPaymentResponse {
@@ -46,6 +64,7 @@ function validate(input: CardPaymentInput): string | null {
   if (!input.cardHolderName.trim()) return "Nome impresso no cartão é obrigatório.";
   if (!digitsOnly(input.cardHolderDocument)) return "CPF do titular do cartão é obrigatório.";
   if (input.installments < 1 || input.installments > 12) return "Número de parcelas inválido.";
+  if (!input.threedsData?.operation_session_id) return "Autenticação de segurança do cartão (3DS) não foi concluída.";
   return null;
 }
 
@@ -93,6 +112,7 @@ export async function payWithCard(
           card_holder_name: input.cardHolderName.trim(),
           card_holder_document: digitsOnly(input.cardHolderDocument),
           installments: input.installments,
+          threeds_data: input.threedsData,
         },
       }),
     });

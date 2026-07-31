@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Script from "next/script";
 import { QRCodeSVG } from "qrcode.react";
 import { Copy, CheckCircle2, MessageCircle, Clock, Loader2, ExternalLink, ShieldCheck, CreditCard } from "lucide-react";
 import { CheckoutSteps } from "@/components/public/CheckoutSteps";
@@ -12,7 +13,7 @@ import { Select } from "@/components/common/Select";
 import { routes } from "@/lib/routes";
 import { formatCurrency } from "@/lib/formatters";
 import { generateStoreWhatsAppLink } from "@/lib/whatsapp";
-import { maskCpf } from "@/lib/utils";
+import { maskCpf, maskCep } from "@/lib/utils";
 import { payWithCard } from "@/lib/actions/card-payment";
 import { PAYMENT_MODE } from "@/lib/payments/mode";
 
@@ -26,6 +27,39 @@ interface PagamentoClientProps {
   expiresAt: string | null;
   isStub: boolean;
   whatsappNumber?: string;
+  clientIp?: string;
+}
+
+declare global {
+  interface Window {
+    ZendrySDKThreeds?: {
+      init_threeds: (input: {
+        token: string;
+        amount: number;
+        payment_form: {
+          network_preference: string;
+          account_type: string;
+          pan: string;
+          expiry_month: string;
+          expiry_year: string;
+          card_holder_name: string;
+          installment_number: number;
+          issuer_installment: boolean;
+        };
+      }) => Promise<{
+        success: boolean;
+        three_ds_data?: {
+          operation_session_id: string;
+          cavv: string;
+          xid: string;
+          eci: string;
+          secure_version: string;
+          directory_server_transaction_id: string;
+          three_ds_server_transaction_id: string;
+        };
+      }>;
+    };
+  }
 }
 
 function maskCardNumber(value: string): string {
@@ -42,12 +76,20 @@ const INSTALLMENT_OPTIONS = Array.from({ length: 12 }, (_, i) => ({
   label: i === 0 ? "1x (à vista)" : `${i + 1}x`,
 }));
 
-// A API do Zendry recusa qualquer pagamento de cartão sem 3DS ("Threeds
-// data is required") — confirmado testando de verdade. O formulário de
-// cartão já está pronto (src/lib/actions/card-payment.ts), mas fica
-// escondido da tela até o SDK de 3DS ser implementado, pra não oferecer uma
-// opção que sempre vai falhar pro cliente.
-const CARD_PAYMENT_ENABLED = false;
+const CARD_BRAND_OPTIONS = [
+  { value: "VISA", label: "Visa" },
+  { value: "MASTERCARD", label: "Mastercard" },
+  { value: "ELO", label: "Elo" },
+  { value: "AMEX", label: "American Express" },
+];
+
+// 3DS é obrigatório na Zendry (confirmado testando de verdade) — o desafio
+// roda no navegador via ZendrySDKThreeds.init_threeds() antes de submeter o
+// pagamento. O token usado nesse SDK é o mesmo Bearer secreto do backend
+// (confirmado com o suporte da Zendry) e não pode ser restringido por
+// whitelist de IP nesse fluxo específico — exposição de risco aceita
+// conscientemente pelo dono da loja. Ver src/lib/payments/mode.ts.
+const CARD_PAYMENT_ENABLED = true;
 
 export function PagamentoClient({
   orderId,
@@ -59,6 +101,7 @@ export function PagamentoClient({
   expiresAt,
   isStub,
   whatsappNumber,
+  clientIp,
 }: PagamentoClientProps) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
@@ -116,8 +159,11 @@ export function PagamentoClient({
   const [cardCvv, setCardCvv] = useState("");
   const [cardHolderName, setCardHolderName] = useState("");
   const [cardHolderDocument, setCardHolderDocument] = useState("");
+  const [cardBrand, setCardBrand] = useState("VISA");
+  const [cardBillingZip, setCardBillingZip] = useState("");
   const [installments, setInstallments] = useState("1");
   const [cardSubmitting, setCardSubmitting] = useState(false);
+  const [cardStep, setCardStep] = useState<"idle" | "3ds" | "paying">("idle");
   const [cardError, setCardError] = useState("");
 
   const handlePayWithCard = async (e: React.FormEvent) => {
@@ -126,26 +172,95 @@ export function PagamentoClient({
     setCardSubmitting(true);
 
     const [mm, yy] = cardExpiry.split("/");
-    const cardExpirationDate = mm && yy?.length === 2 ? `${mm}20${yy}` : "";
-
-    const result = await payWithCard({
-      orderId,
-      cardNumber,
-      cardExpirationDate,
-      cardSecurityCode: cardCvv,
-      cardHolderName,
-      cardHolderDocument,
-      installments: Number(installments),
-    });
-
-    setCardSubmitting(false);
-
-    if ("error" in result) {
-      setCardError(result.error);
+    if (!mm || yy?.length !== 2) {
+      setCardError("Validade do cartão inválida.");
+      setCardSubmitting(false);
       return;
     }
 
-    router.push(routes.pedidoConfirmado(orderId));
+    try {
+      setCardStep("3ds");
+
+      const tokenRes = await fetch("/api/payments/zendry-3ds-token");
+      const tokenJson = (await tokenRes.json()) as { token?: string };
+      if (!tokenRes.ok || !tokenJson.token) {
+        setCardError("Erro ao iniciar a autenticação de segurança do cartão. Tente novamente.");
+        setCardSubmitting(false);
+        setCardStep("idle");
+        return;
+      }
+
+      if (!window.ZendrySDKThreeds) {
+        setCardError("Autenticação de segurança do cartão ainda está carregando. Aguarde alguns segundos e tente de novo.");
+        setCardSubmitting(false);
+        setCardStep("idle");
+        return;
+      }
+
+      const threedsResult = await window.ZendrySDKThreeds.init_threeds({
+        token: tokenJson.token,
+        amount: Math.round(total * 100),
+        payment_form: {
+          network_preference: cardBrand,
+          account_type: "CREDIT",
+          pan: cardNumber.replace(/\D/g, ""),
+          expiry_month: mm,
+          expiry_year: yy,
+          card_holder_name: cardHolderName.trim(),
+          installment_number: Number(installments),
+          issuer_installment: false,
+        },
+      });
+
+      if (!threedsResult?.success || !threedsResult.three_ds_data) {
+        setCardError("Não foi possível concluir a autenticação de segurança do cartão. Tente novamente ou use outro cartão.");
+        setCardSubmitting(false);
+        setCardStep("idle");
+        return;
+      }
+
+      const t = threedsResult.three_ds_data;
+      setCardStep("paying");
+
+      const result = await payWithCard({
+        orderId,
+        cardNumber,
+        cardExpirationDate: `${mm}20${yy}`,
+        cardSecurityCode: cardCvv,
+        cardHolderName,
+        cardHolderDocument,
+        installments: Number(installments),
+        threedsData: {
+          operation_session_id: t.operation_session_id,
+          cavv: t.cavv,
+          xid: t.xid,
+          eci: t.eci,
+          secure_version: t.secure_version,
+          directory_server_transaction_id: t.directory_server_transaction_id,
+          three_ds_server_transaction_id: t.three_ds_server_transaction_id,
+          ip_address: clientIp ?? "",
+          user_agent_browser_value: navigator.userAgent,
+          http_browser_language: navigator.language,
+          http_browser_screen_height: String(window.screen.height),
+          http_browser_screen_width: String(window.screen.width),
+          zip_code: cardBillingZip.replace(/\D/g, ""),
+        },
+      });
+
+      setCardSubmitting(false);
+      setCardStep("idle");
+
+      if ("error" in result) {
+        setCardError(result.error);
+        return;
+      }
+
+      router.push(routes.pedidoConfirmado(orderId));
+    } catch {
+      setCardError("Erro ao processar pagamento com cartão. Tente novamente.");
+      setCardSubmitting(false);
+      setCardStep("idle");
+    }
   };
 
   // ── Modo manual: sem gateway embutido — o link de pagamento é enviado à
@@ -217,6 +332,9 @@ export function PagamentoClient({
 
   return (
     <div className="py-12">
+      {CARD_PAYMENT_ENABLED && (
+        <Script src="https://cdn.zendry.com/v1/zendry-sdk-threeds.min.js" strategy="afterInteractive" />
+      )}
       <Container size="sm">
         <div className="mb-8">
           <CheckoutSteps currentStep={3} />
@@ -381,6 +499,23 @@ export function PagamentoClient({
                   maxLength={14}
                   required
                 />
+                <div className="grid grid-cols-2 gap-3">
+                  <Select
+                    label="Bandeira"
+                    value={cardBrand}
+                    onChange={setCardBrand}
+                    options={CARD_BRAND_OPTIONS}
+                  />
+                  <Input
+                    label="CEP de cobrança"
+                    value={cardBillingZip}
+                    onChange={(e) => setCardBillingZip(maskCep(e.target.value))}
+                    placeholder="00000-000"
+                    inputMode="numeric"
+                    maxLength={9}
+                    required
+                  />
+                </div>
                 <Select
                   label="Parcelas"
                   value={installments}
@@ -391,7 +526,7 @@ export function PagamentoClient({
                 {cardError && <p className="text-sm text-danger">{cardError}</p>}
 
                 <Button type="submit" variant="accent" fullWidth size="lg" isLoading={cardSubmitting}>
-                  Pagar {formatCurrency(total)}
+                  {cardStep === "3ds" ? "Confirmando segurança do cartão..." : cardStep === "paying" ? "Processando pagamento..." : `Pagar ${formatCurrency(total)}`}
                 </Button>
               </form>
             )}

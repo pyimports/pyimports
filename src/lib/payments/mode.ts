@@ -10,7 +10,8 @@
 // "gateway": usa o provider configurado em getPaymentProvider() (Zendry/
 // PicPay) com Pix/Cartão embutidos no site.
 //
-// Trocado pra "manual" a pedido do dono da loja: cartão via Zendry ficou
-// bloqueado esperando o 3DS, e a decisão foi processar TODOS os pagamentos
-// (não só cartão) por fora enquanto isso não resolve.
-export const PAYMENT_MODE: "manual" | "gateway" = "manual";
+// Cartão via Zendry ficou bloqueado esperando o 3DS ser implementado — nesse
+// meio tempo, todos os pagamentos passaram a usar o modo "manual". Com o
+// 3DS implementado (ver PagamentoClient.tsx + card-payment.ts) o modo volta
+// a ser "gateway": Pix + Cartão automáticos, embutidos no site.
+export const PAYMENT_MODE: "manual" | "gateway" = "gateway";
