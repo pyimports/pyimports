@@ -3,14 +3,14 @@
 import React, { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, MessageCircle, Package, StickyNote, Save, ShieldCheck } from "lucide-react";
+import { ArrowLeft, MessageCircle, Package, StickyNote, Save, ShieldCheck, Copy, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/common/Badge";
 import { OrderStatusSelect } from "@/components/admin/OrderStatusSelect";
 import { OrderStatusTimeline } from "@/components/public/OrderStatusTimeline";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/formatters";
-import { updateOrderStatus, updateOrderInternalNotes, updateOrderTracking } from "@/lib/actions/orders";
+import { updateOrderStatus, updateOrderInternalNotes, updateOrderTracking, confirmManualPayment } from "@/lib/actions/orders";
 import { routes } from "@/lib/routes";
 import { ORDER_STATUS_COLORS } from "@/types";
 import type { OrderStatus } from "@/types";
@@ -28,6 +28,9 @@ export function PedidoClient({ order }: Props) {
   const [trackingCode, setTrackingCode] = useState(order.tracking_code ?? "");
   const [trackingUrl, setTrackingUrl] = useState(order.tracking_url ?? "");
   const [trackingSaved, setTrackingSaved] = useState(false);
+  const [manualName, setManualName] = useState("");
+  const [summaryCopied, setSummaryCopied] = useState(false);
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
 
   const handleStatusChange = async (newStatus: OrderStatus) => {
     startTransition(async () => {
@@ -49,6 +52,26 @@ export function PedidoClient({ order }: Props) {
       await updateOrderTracking(order.id, trackingCode, trackingUrl);
       setTrackingSaved(true);
       setTimeout(() => setTrackingSaved(false), 2000);
+    });
+  };
+
+  const productsSummary = (order.items ?? [])
+    .map((item) => `${item.product_name}${item.quantity > 1 ? ` x${item.quantity}` : ""}`)
+    .join(", ");
+  const manualSummaryText = `Nome: ${manualName.trim() || "___"}\nProduto(s): ${productsSummary || "___"}\nID DO PEDIDO: ${order.order_number}`;
+
+  const handleCopySummary = () => {
+    navigator.clipboard.writeText(manualSummaryText).catch(() => {});
+    setSummaryCopied(true);
+    setTimeout(() => setSummaryCopied(false), 2000);
+  };
+
+  const handleConfirmPayment = () => {
+    setConfirmingPayment(true);
+    startTransition(async () => {
+      await confirmManualPayment(order.id);
+      setConfirmingPayment(false);
+      router.refresh();
     });
   };
 
@@ -303,6 +326,54 @@ export function PedidoClient({ order }: Props) {
                     {order.payment_id}
                   </span>
                 </div>
+              )}
+            </div>
+          </div>
+
+          {/* Confirmação manual — pagamento feito por fora (link enviado pelo WhatsApp) */}
+          <div className="bg-dark-surface rounded-2xl border border-dark-border p-5">
+            <h3 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Confirmação manual</h3>
+            <p className="text-xs text-muted mb-3">
+              Cole o nome que o cliente mandou pra gerar o resumo do pedido.
+            </p>
+            <Input
+              label="Nome enviado pelo cliente"
+              value={manualName}
+              onChange={(e) => setManualName(e.target.value)}
+              placeholder="Nome completo"
+            />
+            <div className="mt-3 space-y-2">
+              <p className="text-xs font-semibold text-muted uppercase tracking-wider">Resumo</p>
+              <pre className="whitespace-pre-wrap break-words text-xs bg-dark-alt border border-dark-border rounded-xl px-3 py-2.5 text-dark-text font-mono">
+{manualSummaryText}
+              </pre>
+              <Button
+                variant="secondary"
+                size="sm"
+                fullWidth
+                leftIcon={summaryCopied ? <CheckCircle2 size={13} /> : <Copy size={13} />}
+                onClick={handleCopySummary}
+              >
+                {summaryCopied ? "Copiado!" : "Copiar resumo"}
+              </Button>
+            </div>
+
+            <div className="mt-4 pt-4 border-t border-dark-border">
+              {order.payment_status === "confirmed" ? (
+                <div className="flex items-center gap-2 text-success text-sm font-medium">
+                  <CheckCircle2 size={15} />
+                  Pagamento confirmado
+                </div>
+              ) : (
+                <Button
+                  variant="accent"
+                  size="sm"
+                  fullWidth
+                  onClick={handleConfirmPayment}
+                  isLoading={confirmingPayment}
+                >
+                  Confirmar pagamento recebido
+                </Button>
               )}
             </div>
           </div>

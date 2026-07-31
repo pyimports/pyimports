@@ -14,6 +14,7 @@ import { formatCurrency } from "@/lib/formatters";
 import { generateStoreWhatsAppLink } from "@/lib/whatsapp";
 import { maskCpf } from "@/lib/utils";
 import { payWithCard } from "@/lib/actions/card-payment";
+import { PAYMENT_MODE } from "@/lib/payments/mode";
 
 interface PagamentoClientProps {
   orderId: string;
@@ -146,6 +147,73 @@ export function PagamentoClient({
 
     router.push(routes.pedidoConfirmado(orderId));
   };
+
+  // ── Modo manual: sem gateway embutido — o link de pagamento é enviado à
+  // parte pelo WhatsApp e a confirmação é manual (ver PAYMENT_MODE). ────────
+  if (PAYMENT_MODE === "manual") {
+    const whatsappMessage = `Olá! Fiz o pedido #${orderNumber} (${formatCurrency(total)}) e estou aguardando o link de pagamento.`;
+
+    return (
+      <div className="py-12">
+        <Container size="sm">
+          <div className="mb-8">
+            <CheckoutSteps currentStep={3} />
+          </div>
+
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-bold text-dark-text mb-2">Recebemos seu pedido!</h1>
+            <p className="text-muted">
+              Pedido #{orderNumber} · Total: <span className="text-accent font-bold">{formatCurrency(total)}</span>
+            </p>
+          </div>
+
+          <div className="relative flex flex-col items-center gap-5 p-8 bg-dark-surface rounded-3xl border border-dark-border mb-6 overflow-hidden text-center">
+            <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-72 h-72 rounded-full bg-whatsapp/15 blur-3xl" />
+            <div className="relative w-16 h-16 bg-whatsapp/10 rounded-full flex items-center justify-center">
+              <MessageCircle size={28} className="text-whatsapp" />
+            </div>
+            <p className="relative text-sm text-muted max-w-sm">
+              Nossa equipe vai te chamar no WhatsApp em instantes com o link de pagamento (Pix ou cartão).
+            </p>
+            <a
+              href={generateStoreWhatsAppLink(whatsappNumber, whatsappMessage)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="relative w-full"
+            >
+              <Button variant="accent" fullWidth size="lg" leftIcon={<MessageCircle size={16} />}>
+                Falar no WhatsApp agora
+              </Button>
+            </a>
+          </div>
+
+          <div className="bg-dark-surface rounded-2xl border border-dark-border p-5 space-y-3 mb-6">
+            <h3 className="text-sm font-bold text-dark-text">Depois de pagar, envie pra gente:</h3>
+            {[
+              "Nome completo (o mesmo que você usou no pagamento)",
+              <>ID do pedido: <span className="font-mono text-dark-text">#{orderNumber}</span></>,
+            ].map((step, i) => (
+              <div key={i} className="flex items-start gap-3 text-sm text-muted">
+                <div className="w-5 h-5 bg-accent/10 text-accent rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5">
+                  {i + 1}
+                </div>
+                <span>{step}</span>
+              </div>
+            ))}
+            <p className="text-xs text-muted pt-1">
+              Assim que confirmarmos o pagamento, essa página atualiza sozinha.
+            </p>
+          </div>
+
+          <a href={generateStoreWhatsAppLink(whatsappNumber, `Preciso de ajuda com o pagamento do pedido #${orderNumber}`)} target="_blank" rel="noopener noreferrer">
+            <Button variant="outline" fullWidth leftIcon={<MessageCircle size={16} />}>
+              Preciso de ajuda — WhatsApp
+            </Button>
+          </a>
+        </Container>
+      </div>
+    );
+  }
 
   return (
     <div className="py-12">
