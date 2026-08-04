@@ -3,7 +3,7 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { processPaymentResult } from "@/lib/payments/process";
 import { getZendryAccessToken, ZENDRY_API_BASE } from "@/lib/payments/zendry-provider";
-import { computeCardTotalForInstallments } from "@/lib/pricing";
+import { computeCardTotalForInstallments, MAX_CARD_INSTALLMENTS } from "@/lib/pricing";
 import { digitsOnly } from "@/lib/cpf";
 
 // Pagamento por cartão via Zendry (POST /v1/card_payments) — diferente do
@@ -64,7 +64,7 @@ function validate(input: CardPaymentInput): string | null {
   if (!/^\d{3,4}$/.test(input.cardSecurityCode)) return "Código de segurança (CVV) inválido.";
   if (!input.cardHolderName.trim()) return "Nome impresso no cartão é obrigatório.";
   if (!digitsOnly(input.cardHolderDocument)) return "CPF do titular do cartão é obrigatório.";
-  if (input.installments < 1 || input.installments > 12) return "Número de parcelas inválido.";
+  if (input.installments < 1 || input.installments > MAX_CARD_INSTALLMENTS) return "Número de parcelas inválido.";
   if (!input.threedsData?.operation_session_id) return "Autenticação de segurança do cartão (3DS) não foi concluída.";
   return null;
 }
