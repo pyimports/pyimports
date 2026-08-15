@@ -434,7 +434,12 @@ export function OrderDetailView({ order, cpf }: Props) {
             pedido da Shopee, pra seguirmos com o envio.
           </p>
           <a href={order.shipping_payment_link} target="_blank" rel="noopener noreferrer" className="block">
-            <Button variant="accent" fullWidth leftIcon={<ExternalLink size={14} />}>
+            <Button
+              variant="accent"
+              fullWidth
+              leftIcon={<ExternalLink size={14} />}
+              className="!bg-gradient-to-r !from-amber-400 !to-yellow-500 !text-dark-bg hover:!from-amber-300 hover:!to-yellow-400 uppercase tracking-wide animate-pulse-gold"
+            >
               Pagar o frete
             </Button>
           </a>
