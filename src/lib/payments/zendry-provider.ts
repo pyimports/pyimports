@@ -121,14 +121,21 @@ export const zendryProvider: PaymentProvider = {
     };
   },
 
-  // Não há endpoint de consulta de status confirmado (testei GET
-  // /v1/charges/{reference_code} e variações contra a API real — nenhuma
-  // respondeu de forma utilizável). A confirmação depende do webhook
-  // dedicado (src/app/api/payments/webhook/zendry/route.ts), que confia no
-  // payload protegido por um segredo próprio na URL de callback.
-  async verifyPayment(): Promise<PaymentVerificationResult> {
-    throw new Error(
-      "Zendry: não há verificação de status independente disponível — a confirmação chega só pelo webhook dedicado."
-    );
+  // GET /v1/pix/qrcodes/{reference_code} — descoberto depois (não estava
+  // documentado nem tinha sido encontrado nos testes anteriores; um pedido
+  // real ficou preso "pendente" porque o webhook nunca chegou, e essa rota
+  // confirmou o pagamento de verdade). Usado hoje como fallback de polling
+  // (ver /api/payments/status), não substitui o webhook.
+  async verifyPayment(externalId: string): Promise<PaymentVerificationResult> {
+    const token = await getZendryAccessToken();
+    const res = await fetch(`${ZENDRY_API_BASE}/v1/pix/qrcodes/${externalId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const errorBody = await res.text().catch(() => "");
+      throw new Error(`Zendry recusou a consulta do Pix (${res.status}): ${errorBody}`);
+    }
+    const { qrcode } = (await res.json()) as { qrcode: { status: string; payment_date?: string } };
+    return { status: mapZendryStatus(qrcode.status), paidAt: qrcode.payment_date };
   },
 };

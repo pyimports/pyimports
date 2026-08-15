@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { QRCodeSVG } from "qrcode.react";
-import { Copy, CheckCircle2, MessageCircle, Clock, Loader2, ExternalLink, ShieldCheck, CreditCard } from "lucide-react";
+import { Copy, CheckCircle2, MessageCircle, Clock, Loader2, ExternalLink, ShieldCheck, CreditCard, AlertCircle } from "lucide-react";
 import { CheckoutSteps } from "@/components/public/CheckoutSteps";
 import { Container } from "@/components/common/SectionHeader";
 import { Button } from "@/components/common/Button";
@@ -126,6 +126,46 @@ export function PagamentoClient({
 
   const mins = Math.floor(seconds / 60).toString().padStart(2, "0");
   const secs = (seconds % 60).toString().padStart(2, "0");
+
+  // ── Polling de confirmação ────────────────────────────────────────────
+  // Consulta /api/payments/status a cada poucos segundos enquanto o pedido
+  // não confirma — detecta o pagamento sem depender só do webhook chegar
+  // (motivo: um pedido real ficou preso "pendente" com o webhook nunca
+  // entregue, mesmo o gateway já tendo confirmado o pagamento de verdade).
+  // Roda em paralelo com qualquer tab ativa (Pix ou Cartão), porque o
+  // cliente pode ter pago por fora do fluxo que está olhando na tela.
+  const [paymentFailed, setPaymentFailed] = useState(false);
+
+  useEffect(() => {
+    if (PAYMENT_MODE === "manual") return;
+
+    let cancelled = false;
+
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/payments/status?orderId=${orderId}`);
+        if (!res.ok || cancelled) return;
+        const json = (await res.json()) as { status?: string };
+
+        if (json.status === "approved") {
+          router.push(routes.pedidoConfirmado(orderId));
+        } else if (json.status === "rejected" || json.status === "cancelled") {
+          if (!cancelled) setPaymentFailed(true);
+        }
+        // "pending" (ou qualquer outra coisa) — continua tentando no próximo ciclo.
+      } catch (err) {
+        // Erro de rede na consulta não pode derrubar o polling — só loga e
+        // tenta de novo no próximo ciclo.
+        console.error("Erro ao consultar status do pagamento:", err);
+      }
+    };
+
+    const intervalId = setInterval(poll, 3000);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [orderId, router]);
 
   const handleCopy = () => {
     if (!pixCode) return;
@@ -373,6 +413,15 @@ export function PagamentoClient({
             Pague em {mins}:{secs} antes do link expirar
           </span>
         </div>
+
+        {paymentFailed && (
+          <div className="flex items-center gap-2 mb-6 p-3 bg-danger/5 border border-danger/20 rounded-xl">
+            <AlertCircle size={16} className="text-danger flex-shrink-0" />
+            <span className="text-sm text-danger font-medium">
+              Esse pagamento foi recusado ou cancelado. Tente novamente ou fale com a gente pelo WhatsApp.
+            </span>
+          </div>
+        )}
 
         {hasPix ? (
           <>
