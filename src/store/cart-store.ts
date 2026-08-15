@@ -60,7 +60,7 @@ const initialState: CartState = {
   coupon_code:       null,
   coupon_discount:   0,
   coupon_type:       undefined,
-  insurance_enabled: false,
+  insurance_enabled: true,
   insurance_percentage: INSURANCE_PERCENTAGE,
 };
 
@@ -102,6 +102,12 @@ export const useCartStore = create<CartState & CartActions>()(
                 price_pix: resolveUnitPrice(item, quantity),
               },
             ],
+            // Sempre que um carrinho vazio ganha o primeiro item, o seguro
+            // volta a vir marcado por padrão — o cliente desmarca se não
+            // quiser. Só reseta ao iniciar um carrinho novo, nunca
+            // sobrescreve a escolha do cliente ao adicionar mais itens num
+            // carrinho que já está em andamento.
+            ...(items.length === 0 ? { insurance_enabled: true } : {}),
           });
         }
       },
