@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CheckCircle2, Package, MessageCircle, ArrowRight, MapPin } from "lucide-react";
+import { CheckCircle2, Truck, MessageCircle, ArrowRight, MapPin } from "lucide-react";
 import { CheckoutSteps } from "@/components/public/CheckoutSteps";
 import { Container } from "@/components/common/SectionHeader";
 import { Button } from "@/components/common/Button";
 import { routes } from "@/lib/routes";
+import { formatCurrency } from "@/lib/formatters";
 import { getOrderByIdAdmin } from "@/lib/db/orders";
 import { getPublicStoreSettings } from "@/lib/db/settings";
 import { generateOrderWhatsAppLink, generateStoreWhatsAppLink } from "@/lib/whatsapp";
@@ -20,9 +21,13 @@ export default async function PedidoConfirmadoPage({
   const settings = await getPublicStoreSettings();
 
   let whatsappLink = generateStoreWhatsAppLink(settings.whatsapp_number, settings.whatsapp_default_message);
+  let orderNumber: string | null = null;
+  let orderTotal: number | null = null;
   try {
     const order = await getOrderByIdAdmin(orderId);
     if (order) {
+      orderNumber = order.order_number;
+      orderTotal = order.total;
       whatsappLink = generateOrderWhatsAppLink({
         orderNumber: order.order_number,
         customerName: order.customer_name,
@@ -55,27 +60,47 @@ export default async function PedidoConfirmadoPage({
             Pedido confirmado!
           </h1>
           <p className="text-muted">
-            Seu pedido foi recebido e será processado em breve.
+            Pagamento recebido — seu pedido já está com a gente.
           </p>
-          <div className="inline-block mt-3 px-4 py-1.5 bg-dark-surface border border-dark-border rounded-full">
-            <span className="text-sm text-muted">Pedido </span>
-            <span className="text-sm font-bold font-mono text-dark-text">#{orderId}</span>
+        </div>
+
+        {/* Número do pedido + total pago */}
+        <div className="bg-dark-surface rounded-2xl border border-dark-border p-5 mb-6 flex items-center justify-between">
+          <div>
+            <p className="text-xs text-muted uppercase tracking-wider">Número do pedido</p>
+            <p className="text-lg font-bold font-mono text-dark-text">#{orderNumber ?? orderId}</p>
           </div>
+          {orderTotal !== null && (
+            <div className="text-right">
+              <p className="text-xs text-muted uppercase tracking-wider">Total pago</p>
+              <p className="text-lg font-bold text-accent">{formatCurrency(orderTotal)}</p>
+            </div>
+          )}
         </div>
 
         {/* Next steps */}
         <div className="bg-dark-surface rounded-2xl border border-dark-border p-6 mb-6 space-y-4">
           <h2 className="text-sm font-bold text-dark-text">Próximos passos:</h2>
-          {[
-            { icon: CheckCircle2, text: "Confirmação de pagamento — você receberá uma notificação por WhatsApp", color: "text-success" },
-            { icon: Package, text: "Separação e embalagem — geralmente em 1-2 dias úteis após o pagamento", color: "text-info" },
-            { icon: MapPin, text: "Envio e rastreamento — você receberá o código de rastreio via WhatsApp", color: "text-accent" },
-          ].map((step, i) => (
-            <div key={i} className="flex items-start gap-3">
-              <step.icon size={18} className={`${step.color} flex-shrink-0 mt-0.5`} />
-              <p className="text-sm text-muted">{step.text}</p>
-            </div>
-          ))}
+          <div className="flex items-start gap-3">
+            <CheckCircle2 size={18} className="text-success flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-muted">Pagamento confirmado — já processamos a baixa do seu pedido.</p>
+          </div>
+          <div className="flex items-start gap-3">
+            <Truck size={18} className="text-info flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-muted">
+              Frete e envio — nossa equipe combina com você pelo WhatsApp, geralmente em 1-2 dias úteis.
+            </p>
+          </div>
+          <div className="flex items-start gap-3">
+            <MapPin size={18} className="text-accent flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-muted">
+              Depois do envio, acompanhe tudo em{" "}
+              <Link href={routes.acompanharPedido} className="text-accent font-medium underline underline-offset-2 hover:text-accent-light">
+                Acompanhar Pedido
+              </Link>{" "}
+              — o código de rastreio também chega pelo WhatsApp.
+            </p>
+          </div>
         </div>
 
         {/* Actions */}
