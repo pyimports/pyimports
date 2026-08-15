@@ -7,11 +7,15 @@ import { CheckoutSteps } from "@/components/public/CheckoutSteps";
 import { Container } from "@/components/common/SectionHeader";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
+import { Select } from "@/components/common/Select";
 import { formatCurrency } from "@/lib/formatters";
 import { maskPhone, maskCpf } from "@/lib/utils";
 import { isValidCpf } from "@/lib/cpf";
+import { BRAZILIAN_STATES } from "@/lib/brazilian-states";
 import { useCartStore } from "@/store/cart-store";
 import { createOrder } from "@/lib/actions/checkout";
+
+const STATE_OPTIONS = BRAZILIAN_STATES.map((s) => ({ value: s, label: s }));
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -30,6 +34,7 @@ export default function CheckoutPage() {
   const [email,        setEmail]        = useState("");
   const [phone,        setPhone]        = useState("");
   const [cpf,          setCpf]          = useState("");
+  const [state,        setState]        = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"pix" | "card" | "">("");
 
   const [submitting,   setSubmitting]   = useState(false);
@@ -47,6 +52,7 @@ export default function CheckoutPage() {
     isValidCpf(cpf) &&
     !!email.trim() &&
     !!phone.trim() &&
+    state.trim() !== "" &&
     paymentMethod !== "" &&
     items.length > 0;
 
@@ -60,6 +66,7 @@ export default function CheckoutPage() {
     if (!isValidCpf(cpf))     { setSubmitError("CPF inválido.");              return; }
     if (!email.trim())        { setSubmitError("E-mail é obrigatório.");      return; }
     if (!phone.trim())        { setSubmitError("Telefone é obrigatório.");    return; }
+    if (!state.trim())        { setSubmitError("Estado é obrigatório.");      return; }
     if (!paymentMethod)       { setSubmitError("Escolha a forma de pagamento."); return; }
     if (items.length === 0)   { setSubmitError("Seu carrinho está vazio.");   return; }
 
@@ -70,6 +77,7 @@ export default function CheckoutPage() {
       email,
       phone,
       cpf,
+      state,
       items: items.map((i) => ({
         product_id: i.product_id,
         variant_size_id: i.variant_size_id,
@@ -108,6 +116,14 @@ export default function CheckoutPage() {
                 <Input label="CPF" value={cpf} onChange={(e) => setCpf(maskCpf(e.target.value))} placeholder="000.000.000-00" maxLength={14} required />
                 <Input label="E-mail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" required />
                 <Input label="Telefone / WhatsApp" value={phone} onChange={(e) => setPhone(maskPhone(e.target.value))} placeholder="(00) 00000-0000" maxLength={15} required />
+                <Select
+                  required
+                  label="Estado"
+                  value={state}
+                  onChange={setState}
+                  options={STATE_OPTIONS}
+                  placeholder="Selecione seu estado"
+                />
               </div>
             </div>
 

@@ -5,6 +5,7 @@ import { resolveBasePrice, calculateQuantityDiscountPrice } from "@/lib/pricing"
 import { createPaymentPreferenceForOrder } from "@/lib/payments/create-preference";
 import { getPublicStoreSettings } from "@/lib/db/settings";
 import { digitsOnly, isValidCpf } from "@/lib/cpf";
+import { BRAZILIAN_STATES } from "@/lib/brazilian-states";
 
 // ---------------------------------------------------------------------------
 // O front-end nunca é fonte de verdade para preço/estoque/desconto. O
@@ -24,6 +25,7 @@ export interface CheckoutFormData {
   email: string;
   phone: string;
   cpf: string;
+  state: string;
   items: CheckoutItemInput[];
   coupon_code?: string;
   insurance_enabled?: boolean;
@@ -319,6 +321,9 @@ export async function createOrder(
   // pedidos por CPF (tela Acompanhar Pedido).
   if (!data.cpf?.trim()) return { error: "CPF é obrigatório." };
   if (!isValidCpf(data.cpf)) return { error: "CPF inválido." };
+  if (!data.state?.trim() || !(BRAZILIAN_STATES as readonly string[]).includes(data.state.trim())) {
+    return { error: "Selecione um estado válido." };
+  }
 
   const service = createServiceClient();
 
@@ -385,7 +390,7 @@ export async function createOrder(
         shipping_complement:   null,
         shipping_neighborhood: "",
         shipping_city:         "",
-        shipping_state:        "",
+        shipping_state:        data.state.trim(),
         shipping_zip_code:     "",
         subtotal:              subtotalPix,
         coupon_code:           coupon?.code ?? null,

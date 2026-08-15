@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CheckCircle2, Truck, MessageCircle, ArrowRight, MapPin } from "lucide-react";
+import { CheckCircle2, MessageCircle, ArrowRight, LinkIcon, Tag } from "lucide-react";
 import { CheckoutSteps } from "@/components/public/CheckoutSteps";
 import { Container } from "@/components/common/SectionHeader";
 import { Button } from "@/components/common/Button";
@@ -86,19 +86,19 @@ export default async function PedidoConfirmadoPage({
             <p className="text-sm text-muted">Pagamento confirmado — já processamos a baixa do seu pedido.</p>
           </div>
           <div className="flex items-start gap-3">
-            <Truck size={18} className="text-info flex-shrink-0 mt-0.5" />
+            <LinkIcon size={18} className="text-accent flex-shrink-0 mt-0.5" />
             <p className="text-sm text-muted">
-              Frete e envio — nossa equipe combina com você pelo WhatsApp, geralmente em 1-2 dias úteis.
+              Link de pagamento do frete — liberado direto na página{" "}
+              <Link href={routes.acompanharPedido} className="text-accent font-medium underline underline-offset-2 hover:text-accent-light">
+                Acompanhar Pedido
+              </Link>
+              .
             </p>
           </div>
           <div className="flex items-start gap-3">
-            <MapPin size={18} className="text-accent flex-shrink-0 mt-0.5" />
+            <Tag size={18} className="text-info flex-shrink-0 mt-0.5" />
             <p className="text-sm text-muted">
-              Depois do envio, acompanhe tudo em{" "}
-              <Link href={routes.acompanharPedido} className="text-accent font-medium underline underline-offset-2 hover:text-accent-light">
-                Acompanhar Pedido
-              </Link>{" "}
-              — o código de rastreio também chega pelo WhatsApp.
+              Após pagar o frete e confirmar, emitimos a etiqueta e seu pedido segue para postagem.
             </p>
           </div>
         </div>

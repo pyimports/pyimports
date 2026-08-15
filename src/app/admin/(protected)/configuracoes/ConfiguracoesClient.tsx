@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, CheckCircle2, AlertCircle, Trash2 } from "lucide-react";
+import { Save, CheckCircle2, AlertCircle, Trash2, Plus } from "lucide-react";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { Toggle } from "@/components/common/Toggle";
@@ -11,11 +11,13 @@ import { Modal } from "@/components/common/Modal";
 import { Select } from "@/components/common/Select";
 import {
   updateStoreSettings,
+  updateShippingSettings,
   inviteAdminUser,
   removeAdminUser,
   type StoreSettingsFormData,
+  type ShippingSettingsFormData,
 } from "@/lib/actions/settings";
-import type { AdminStoreSettings } from "@/lib/db/settings";
+import type { AdminStoreSettings, ShippingPaymentLinkSetting } from "@/lib/db/settings";
 import type { AdminProfile } from "@/types";
 
 const TABS = [
@@ -79,6 +81,56 @@ export function ConfiguracoesClient({ initialSettings, initialAdmins, currentAdm
       setSaved(true);
       router.refresh();
       setTimeout(() => setSaved(false), 3000);
+    }
+  };
+
+  // ── Frete — links de pagamento do envio + prazos de liberação ───────────
+  const [shippingForm, setShippingForm] = useState<ShippingSettingsFormData>({
+    shipping_payment_links: initialSettings.shipping_payment_links,
+    shipping_link_delay_pix_hours: initialSettings.shipping_link_delay_pix_hours,
+    shipping_link_delay_card_hours: initialSettings.shipping_link_delay_card_hours,
+  });
+  const [shippingSaving, setShippingSaving] = useState(false);
+  const [shippingError, setShippingError] = useState("");
+  const [shippingSaved, setShippingSaved] = useState(false);
+
+  const addShippingLink = () => {
+    if (shippingForm.shipping_payment_links.length >= 5) return;
+    const newLink: ShippingPaymentLinkSetting = {
+      id: `link-${Date.now()}`,
+      label: "",
+      url: "",
+      is_active: true,
+    };
+    setShippingForm((prev) => ({ ...prev, shipping_payment_links: [...prev.shipping_payment_links, newLink] }));
+  };
+
+  const updateShippingLink = (id: string, patch: Partial<ShippingPaymentLinkSetting>) => {
+    setShippingForm((prev) => ({
+      ...prev,
+      shipping_payment_links: prev.shipping_payment_links.map((l) => (l.id === id ? { ...l, ...patch } : l)),
+    }));
+  };
+
+  const removeShippingLink = (id: string) => {
+    setShippingForm((prev) => ({
+      ...prev,
+      shipping_payment_links: prev.shipping_payment_links.filter((l) => l.id !== id),
+    }));
+  };
+
+  const handleSaveShipping = async () => {
+    setShippingSaving(true);
+    setShippingError("");
+    setShippingSaved(false);
+    const result = await updateShippingSettings(shippingForm);
+    setShippingSaving(false);
+    if ("error" in result) {
+      setShippingError(result.error);
+    } else {
+      setShippingSaved(true);
+      router.refresh();
+      setTimeout(() => setShippingSaved(false), 3000);
     }
   };
 
@@ -176,14 +228,15 @@ export function ConfiguracoesClient({ initialSettings, initialAdmins, currentAdm
 
         <TabContent value="pagamentos" active={activeTab}>
           <div className="space-y-4 mt-6">
-            <SectionCard title="Pagamento via Zendry">
+            <SectionCard title="Pagamento — Pix (SupraPay) + Cartão (Zendry)">
               <p className="text-sm text-muted leading-relaxed">
-                O checkout gera automaticamente um link de pagamento hospedado (Zendry) para cada
-                pedido — o cliente escolhe Pix ou cartão na página deles. Não há configuração manual
-                de chave Pix ou cartão nesta tela.
+                O checkout gera automaticamente um QR Code Pix embutido na própria página, via
+                SupraPay. Pagamento por cartão continua embutido também, processado pelo Zendry
+                (com 3DS). O cliente escolhe Pix ou cartão na tela de pagamento do pedido. Não há
+                configuração manual de chave Pix ou cartão nesta tela.
               </p>
               <p className="text-xs text-muted">
-                As credenciais de integração do Zendry ficam nas variáveis de ambiente do servidor, não aqui.
+                As credenciais de integração (SupraPay e Zendry) ficam nas variáveis de ambiente do servidor, não aqui.
               </p>
             </SectionCard>
           </div>
@@ -191,13 +244,113 @@ export function ConfiguracoesClient({ initialSettings, initialAdmins, currentAdm
 
         <TabContent value="frete" active={activeTab}>
           <div className="space-y-4 mt-6">
-            <SectionCard title="Envio via Shopee">
+            <SectionCard title="Links de pagamento do frete (Shopee)">
               <p className="text-sm text-muted leading-relaxed">
-                O frete não é calculado automaticamente no site. Após a confirmação do pagamento,
-                o valor do envio (em geral entre R$ 40 e R$ 80) é combinado direto com o cliente
-                pelo WhatsApp e cobrado separadamente pela Shopee.
+                Depois que o pagamento do pedido é confirmado, o sistema libera automaticamente pro
+                cliente — na área &quot;Acompanhar Pedido&quot; — um destes links, sorteado entre os
+                marcados como ativos. Cadastre até 5.
+              </p>
+
+              <div className="space-y-3">
+                {shippingForm.shipping_payment_links.map((link, i) => (
+                  <div key={link.id} className="flex items-start gap-2 p-3 bg-dark-alt rounded-xl border border-dark-border">
+                    <div className="flex-1 space-y-2">
+                      <Input
+                        label={`Nome do link ${i + 1}`}
+                        placeholder="Ex: Frete Shopee — conta 1"
+                        value={link.label}
+                        onChange={(e) => updateShippingLink(link.id, { label: e.target.value })}
+                      />
+                      <Input
+                        label="URL de pagamento"
+                        placeholder="https://..."
+                        value={link.url}
+                        onChange={(e) => updateShippingLink(link.id, { url: e.target.value })}
+                      />
+                      <Toggle
+                        size="sm"
+                        checked={link.is_active}
+                        onChange={(v) => updateShippingLink(link.id, { is_active: v })}
+                        label={link.is_active ? "Ativo — entra no sorteio" : "Inativo — não entra no sorteio"}
+                      />
+                    </div>
+                    <button
+                      onClick={() => removeShippingLink(link.id)}
+                      className="p-2 text-muted hover:text-danger transition-colors flex-shrink-0"
+                      title="Remover link"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+
+                {shippingForm.shipping_payment_links.length === 0 && (
+                  <p className="text-xs text-muted bg-dark-alt/60 rounded-xl px-3 py-2.5">
+                    Nenhum link cadastrado ainda — sem pelo menos um link ativo, o sistema não consegue liberar o frete automaticamente.
+                  </p>
+                )}
+              </div>
+
+              {shippingForm.shipping_payment_links.length < 5 && (
+                <Button variant="outline" size="sm" leftIcon={<Plus size={14} />} onClick={addShippingLink}>
+                  Adicionar link
+                </Button>
+              )}
+            </SectionCard>
+
+            <SectionCard title="Tempo de liberação">
+              <p className="text-sm text-muted leading-relaxed">
+                Quantas horas depois da confirmação do pagamento o link de frete é liberado —
+                pode ser diferente para Pix e Cartão.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <div className="max-w-[200px]">
+                  <Input
+                    label="Horas no Pix"
+                    type="number"
+                    min={0}
+                    step={1}
+                    className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    value={shippingForm.shipping_link_delay_pix_hours}
+                    onChange={(e) =>
+                      setShippingForm((prev) => ({ ...prev, shipping_link_delay_pix_hours: Number(e.target.value) }))
+                    }
+                  />
+                </div>
+                <div className="max-w-[200px]">
+                  <Input
+                    label="Horas no Cartão"
+                    type="number"
+                    min={0}
+                    step={1}
+                    className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    value={shippingForm.shipping_link_delay_card_hours}
+                    onChange={(e) =>
+                      setShippingForm((prev) => ({ ...prev, shipping_link_delay_card_hours: Number(e.target.value) }))
+                    }
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted">
+                0 horas = liberação instantânea. Um pedido pago às 10h no Pix com 0h de atraso já mostra o link ao cliente na hora; no Cartão com 48h, só a partir das 10h do 3º dia.
               </p>
             </SectionCard>
+
+            <div className="flex items-center gap-3">
+              {shippingSaved && (
+                <span className="flex items-center gap-1.5 text-xs text-success">
+                  <CheckCircle2 size={14} /> Salvo
+                </span>
+              )}
+              {shippingError && (
+                <span className="flex items-center gap-1.5 text-xs text-danger">
+                  <AlertCircle size={14} /> {shippingError}
+                </span>
+              )}
+              <Button variant="accent" leftIcon={<Save size={16} />} onClick={handleSaveShipping} isLoading={shippingSaving}>
+                Salvar frete
+              </Button>
+            </div>
           </div>
         </TabContent>
 
@@ -280,11 +433,11 @@ export function ConfiguracoesClient({ initialSettings, initialAdmins, currentAdm
               <div className="flex items-center gap-3 flex-wrap">
                 <button
                   className="w-10 h-10 rounded-full border-2 border-white scale-110 transition-all bg-accent"
-                  title="#3b82f6"
+                  title="#f2b705"
                 />
               </div>
-              <p className="text-xs text-muted">Cor atual: <span className="text-accent font-bold">#3b82f6 (Azul premium)</span></p>
-              <p className="text-xs text-muted">A identidade visual da loja é fixa na paleta oficial (azul-marinho, azul e off-white).</p>
+              <p className="text-xs text-muted">Cor atual: <span className="text-accent font-bold">#f2b705 (Dourado premium)</span></p>
+              <p className="text-xs text-muted">A identidade visual da loja é fixa na paleta oficial (preto, dourado e off-white).</p>
             </SectionCard>
             <SectionCard title="Logo">
               <Input
