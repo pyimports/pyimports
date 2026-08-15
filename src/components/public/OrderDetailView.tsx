@@ -458,7 +458,7 @@ export function OrderDetailView({ order, cpf }: Props) {
                 <button
                   type="button"
                   onClick={() => setIdHelpOpen(true)}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent/15 border border-accent/40 text-xs font-bold text-accent hover:bg-accent/25 transition-colors flex-shrink-0"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-red-500 to-orange-500 border border-red-400 text-xs font-bold text-white shadow-[0_0_14px_rgba(239,68,68,0.6)] hover:from-red-400 hover:to-orange-400 transition-colors flex-shrink-0 animate-shake"
                 >
                   <HelpCircle size={12} />
                   Como pegar o ID?
