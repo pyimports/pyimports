@@ -9,6 +9,7 @@ import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { formatCurrency } from "@/lib/formatters";
 import { maskPhone, maskCpf } from "@/lib/utils";
+import { isValidCpf } from "@/lib/cpf";
 import { useCartStore } from "@/store/cart-store";
 import { createOrder } from "@/lib/actions/checkout";
 
@@ -43,6 +44,8 @@ export default function CheckoutPage() {
 
     // Validação client-side rápida
     if (!name.trim())         { setSubmitError("Nome é obrigatório.");        return; }
+    if (!cpf.trim())          { setSubmitError("CPF é obrigatório.");         return; }
+    if (!isValidCpf(cpf))     { setSubmitError("CPF inválido.");              return; }
     if (!email.trim())        { setSubmitError("E-mail é obrigatório.");      return; }
     if (!phone.trim())        { setSubmitError("Telefone é obrigatório.");    return; }
     if (items.length === 0)   { setSubmitError("Seu carrinho está vazio.");   return; }
@@ -88,10 +91,10 @@ export default function CheckoutPage() {
             <div className="bg-dark-surface rounded-2xl border border-dark-border p-6 space-y-4">
               <h2 className="text-base font-bold text-dark-text">Dados pessoais</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input label="Nome completo" value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome completo" />
-                <Input label="CPF" value={cpf} onChange={(e) => setCpf(maskCpf(e.target.value))} placeholder="000.000.000-00" maxLength={14} />
-                <Input label="E-mail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" />
-                <Input label="Telefone / WhatsApp" value={phone} onChange={(e) => setPhone(maskPhone(e.target.value))} placeholder="(00) 00000-0000" maxLength={15} />
+                <Input label="Nome completo" value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome completo" required />
+                <Input label="CPF" value={cpf} onChange={(e) => setCpf(maskCpf(e.target.value))} placeholder="000.000.000-00" maxLength={14} required />
+                <Input label="E-mail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" required />
+                <Input label="Telefone / WhatsApp" value={phone} onChange={(e) => setPhone(maskPhone(e.target.value))} placeholder="(00) 00000-0000" maxLength={15} required />
               </div>
             </div>
 

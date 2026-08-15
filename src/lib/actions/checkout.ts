@@ -23,7 +23,7 @@ export interface CheckoutFormData {
   name: string;
   email: string;
   phone: string;
-  cpf?: string;
+  cpf: string;
   items: CheckoutItemInput[];
   coupon_code?: string;
   insurance_enabled?: boolean;
@@ -314,9 +314,11 @@ export async function createOrder(
   if (!data.email.trim())        return { error: "E-mail é obrigatório." };
   if (!data.phone.trim())        return { error: "Telefone é obrigatório." };
   if (!data.items || data.items.length === 0) return { error: "Carrinho vazio." };
-  // CPF é opcional no checkout, mas se informado precisa ser válido — usado
-  // depois na busca pública de pedidos por CPF (tela Acompanhar Pedido).
-  if (data.cpf?.trim() && !isValidCpf(data.cpf)) return { error: "CPF inválido." };
+  // CPF é obrigatório — a PYX Gate exige customer.document pra criar
+  // qualquer cobrança Pix/cartão, além de já ser usado na busca pública de
+  // pedidos por CPF (tela Acompanhar Pedido).
+  if (!data.cpf?.trim()) return { error: "CPF é obrigatório." };
+  if (!isValidCpf(data.cpf)) return { error: "CPF inválido." };
 
   const service = createServiceClient();
 
@@ -348,18 +350,17 @@ export async function createOrder(
     const total = Math.max(0, Number((subtotalPix + shippingValue + insuranceValue - couponDiscount).toFixed(2)));
 
     // 3. Upsert cliente por e-mail (cria se novo, atualiza dados se existente)
-    // cpf_cnpj só entra no payload se foi informado nesta compra — senão o
-    // upsert sobrescreveria com null um CPF já salvo numa compra anterior.
+    // CPF agora é obrigatório no checkout (validado acima), sempre gravado.
     // Endereço não é mais coletado no checkout — o admin combina o envio
     // (Shopee) e preenche isso depois, se precisar.
     const { data: customer, error: customerError } = await service
       .from("customers")
       .upsert(
         {
-          name:  data.name.trim(),
-          email: data.email.trim().toLowerCase(),
-          phone: data.phone.trim(),
-          ...(data.cpf?.trim() ? { cpf_cnpj: digitsOnly(data.cpf) } : {}),
+          name:     data.name.trim(),
+          email:    data.email.trim().toLowerCase(),
+          phone:    data.phone.trim(),
+          cpf_cnpj: digitsOnly(data.cpf),
         },
         { onConflict: "email" }
       )
