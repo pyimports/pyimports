@@ -43,6 +43,7 @@ export default async function PagamentoPage({
       isStub={isStubPaymentProvider()}
       whatsappNumber={settings.whatsapp_number}
       clientIp={clientIp}
+      customerEmail={order.customer_email}
     />
   );
 }

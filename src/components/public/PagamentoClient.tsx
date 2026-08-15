@@ -14,7 +14,7 @@ import { routes } from "@/lib/routes";
 import { formatCurrency } from "@/lib/formatters";
 import { generateStoreWhatsAppLink } from "@/lib/whatsapp";
 import { maskCpf, maskCep } from "@/lib/utils";
-import { payWithCard } from "@/lib/actions/card-payment";
+import { payWithCardPyxgate } from "@/lib/actions/pyxgate-card-payment";
 import { PAYMENT_MODE } from "@/lib/payments/mode";
 import { computeCardTotalForInstallments, MAX_CARD_INSTALLMENTS } from "@/lib/pricing";
 
@@ -29,6 +29,7 @@ interface PagamentoClientProps {
   isStub: boolean;
   whatsappNumber?: string;
   clientIp?: string;
+  customerEmail: string;
 }
 
 declare global {
@@ -98,6 +99,7 @@ export function PagamentoClient({
   isStub,
   whatsappNumber,
   clientIp,
+  customerEmail,
 }: PagamentoClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -197,7 +199,7 @@ export function PagamentoClient({
     try {
       setCardStep("3ds");
 
-      const tokenRes = await fetch("/api/payments/zendry-3ds-token");
+      const tokenRes = await fetch("/api/payments/pyxgate-3ds-token");
       const tokenJson = (await tokenRes.json()) as { token?: string };
       if (!tokenRes.ok || !tokenJson.token) {
         setCardError("Erro ao iniciar a autenticação de segurança do cartão. Tente novamente.");
@@ -238,13 +240,14 @@ export function PagamentoClient({
       const t = threedsResult.three_ds_data;
       setCardStep("paying");
 
-      const result = await payWithCard({
+      const result = await payWithCardPyxgate({
         orderId,
         cardNumber,
         cardExpirationDate: `${mm}20${yy}`,
         cardSecurityCode: cardCvv,
         cardHolderName,
         cardHolderDocument,
+        customerEmail,
         installments: Number(installments),
         threedsData: {
           operation_session_id: t.operation_session_id,
