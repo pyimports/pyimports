@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, ShieldCheck } from "lucide-react";
+import { AlertCircle, QrCode, CreditCard } from "lucide-react";
 import { CheckoutSteps } from "@/components/public/CheckoutSteps";
 import { Container } from "@/components/common/SectionHeader";
 import { Button } from "@/components/common/Button";
@@ -30,6 +30,7 @@ export default function CheckoutPage() {
   const [email,        setEmail]        = useState("");
   const [phone,        setPhone]        = useState("");
   const [cpf,          setCpf]          = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"pix" | "card" | "">("");
 
   const [submitting,   setSubmitting]   = useState(false);
   const [submitError,  setSubmitError]  = useState("");
@@ -39,15 +40,27 @@ export default function CheckoutPage() {
   const insurance = getInsuranceValue();
   const total     = getTotalPix();
 
+  // Botão "Finalizar pedido" só libera com tudo preenchido — nada de
+  // deixar clicar e só mostrar erro depois.
+  const isFormValid =
+    !!name.trim() &&
+    isValidCpf(cpf) &&
+    !!email.trim() &&
+    !!phone.trim() &&
+    paymentMethod !== "" &&
+    items.length > 0;
+
   const handleSubmit = async () => {
     setSubmitError("");
 
-    // Validação client-side rápida
+    // Validação server-side já cobre tudo isso de novo — esta é só a
+    // camada rápida do client, o botão já vem desabilitado sem isFormValid.
     if (!name.trim())         { setSubmitError("Nome é obrigatório.");        return; }
     if (!cpf.trim())          { setSubmitError("CPF é obrigatório.");         return; }
     if (!isValidCpf(cpf))     { setSubmitError("CPF inválido.");              return; }
     if (!email.trim())        { setSubmitError("E-mail é obrigatório.");      return; }
     if (!phone.trim())        { setSubmitError("Telefone é obrigatório.");    return; }
+    if (!paymentMethod)       { setSubmitError("Escolha a forma de pagamento."); return; }
     if (items.length === 0)   { setSubmitError("Seu carrinho está vazio.");   return; }
 
     setSubmitting(true);
@@ -73,7 +86,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    router.push(`/pagamento/${result.orderId}`);
+    router.push(`/pagamento/${result.orderId}?method=${paymentMethod}`);
   };
 
   return (
@@ -100,14 +113,42 @@ export default function CheckoutPage() {
 
             {/* Payment method */}
             <div className="bg-dark-surface rounded-2xl border border-dark-border p-6 space-y-3">
-              <h2 className="text-base font-bold text-dark-text">Forma de pagamento</h2>
-              <div className="flex items-center gap-3 p-4 rounded-xl border border-accent/40 bg-accent/5">
-                <ShieldCheck size={18} className="text-accent flex-shrink-0" />
-                <p className="text-sm text-dark-text">
-                  Você escolhe entre <span className="font-semibold">Pix</span> ou{" "}
-                  <span className="font-semibold">cartão de crédito</span> na próxima tela, sem sair do nosso
-                  site — aprovação automática.
-                </p>
+              <h2 className="text-base font-bold text-dark-text">
+                Forma de pagamento <span className="text-danger">*</span>
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("pix")}
+                  className={[
+                    "flex items-center gap-3 p-4 rounded-xl border text-left transition-all",
+                    paymentMethod === "pix"
+                      ? "border-accent bg-accent/10"
+                      : "border-dark-border hover:border-accent/40",
+                  ].join(" ")}
+                >
+                  <QrCode size={20} className={paymentMethod === "pix" ? "text-accent" : "text-muted"} />
+                  <div>
+                    <p className="text-sm font-semibold text-dark-text">Pix</p>
+                    <p className="text-xs text-muted">Aprovação automática</p>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("card")}
+                  className={[
+                    "flex items-center gap-3 p-4 rounded-xl border text-left transition-all",
+                    paymentMethod === "card"
+                      ? "border-accent bg-accent/10"
+                      : "border-dark-border hover:border-accent/40",
+                  ].join(" ")}
+                >
+                  <CreditCard size={20} className={paymentMethod === "card" ? "text-accent" : "text-muted"} />
+                  <div>
+                    <p className="text-sm font-semibold text-dark-text">Cartão de crédito</p>
+                    <p className="text-xs text-muted">Em até 14x, sem sair do site</p>
+                  </div>
+                </button>
               </div>
             </div>
 
@@ -157,6 +198,7 @@ export default function CheckoutPage() {
                 fullWidth
                 size="lg"
                 isLoading={submitting}
+                disabled={!isFormValid}
                 onClick={handleSubmit}
               >
                 Finalizar pedido

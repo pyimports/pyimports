@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { QRCodeSVG } from "qrcode.react";
 import { Copy, CheckCircle2, MessageCircle, Clock, Loader2, ExternalLink, ShieldCheck, CreditCard } from "lucide-react";
@@ -100,12 +100,17 @@ export function PagamentoClient({
   clientIp,
 }: PagamentoClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [copied, setCopied] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [confirmError, setConfirmError] = useState("");
 
   const hasPix = !!(pixQrUrl || pixCode);
-  const [activeTab, setActiveTab] = useState<"pix" | "card">("pix");
+  // Reflete a escolha feita no checkout (?method=pix|card) — se o cliente já
+  // escolheu cartão lá, a tela de pagamento já abre na aba certa.
+  const [activeTab, setActiveTab] = useState<"pix" | "card">(
+    searchParams.get("method") === "card" ? "card" : "pix"
+  );
 
   const initialSeconds = expiresAt
     ? Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000))
