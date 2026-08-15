@@ -785,7 +785,7 @@ export function OrderDetailView({ order, cpf }: Props) {
             </div>
           </div>
           <h2 className="text-xl font-bold text-dark-text mb-1">Obrigado pela compra!</h2>
-          <p className="text-sm font-semibold text-success mb-4">Equipe Tio Snoop agradece.</p>
+          <p className="text-sm font-semibold text-success mb-4">Equipe PYimports agradece.</p>
           <p className="text-sm text-dark-text font-medium">
             {labelConfirmedOverride ? "Confirmado! Seu pedido está finalizado." : "Seu pedido está finalizado."}
           </p>
