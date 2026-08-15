@@ -386,7 +386,7 @@ export function OrderDetailView({ order, cpf }: Props) {
           <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full bg-accent/10 blur-3xl" />
           <div className="relative flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/15 border border-accent/40 w-fit mx-auto animate-pulse-accent">
             <Clock size={14} className="text-accent" />
-            <p className="text-sm font-bold text-accent uppercase tracking-wide">Pagamento confirmado</p>
+            <p className="text-sm font-bold text-dark-text uppercase tracking-wide">Pagamento confirmado</p>
           </div>
           <p className="relative text-sm text-muted text-center">
             {order.payment_method === "card" ? (
@@ -407,7 +407,7 @@ export function OrderDetailView({ order, cpf }: Props) {
           {shippingLinkMsRemaining !== null && shippingLinkMsRemaining > 0 ? (
             <div className="relative flex flex-col items-center gap-2 py-4">
               <span className="text-xs text-muted uppercase tracking-wider">Libera em</span>
-              <span className="text-3xl font-extrabold text-accent tabular-nums tracking-tight">
+              <span className="text-3xl font-extrabold text-dark-text tabular-nums tracking-tight">
                 {formatCountdownLong(shippingLinkMsRemaining)}
               </span>
               <span className="text-sm text-dark-text font-medium mt-1">
