@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { Truck, MessageCircle, Copy, Check, ImageIcon, ExternalLink, CheckCircle2, FileText, X, Download, Clock, HelpCircle, Clipboard, ChevronDown, AlertTriangle } from "lucide-react";
+import { Truck, MessageCircle, Copy, Check, ImageIcon, ExternalLink, CheckCircle2, FileText, X, Download, Clock, HelpCircle, Clipboard, ChevronDown, AlertTriangle, CalendarClock, CalendarOff } from "lucide-react";
 import { OrderStatusTimeline } from "@/components/public/OrderStatusTimeline";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
@@ -386,37 +386,58 @@ export function OrderDetailView({ order, cpf }: Props) {
           caiu fora do nosso expediente (RELEASE_WINDOWS em shipping-link.ts).
           Dentro do expediente libera na hora, sem precisar de aviso nenhum. */}
       {effectiveStatus === "payment_confirmed" && order.shipping_link_eta && (
-        <div className="relative bg-dark-surface rounded-2xl border border-accent/30 p-6 space-y-4 overflow-hidden">
-          <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full bg-accent/10 blur-3xl" />
-          <div className="relative flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/15 border border-accent/40 w-fit mx-auto animate-pulse-accent">
-            <Clock size={14} className="text-accent" />
-            <p className="text-sm font-bold text-dark-text uppercase tracking-wide">Pagamento confirmado</p>
-          </div>
-          <p className="relative text-sm text-muted text-center">
-            Seu pagamento foi confirmado fora do nosso horário de expedição. O link de pagamento do frete
-            é liberado automaticamente assim que abrir o próximo expediente:
-          </p>
-          <div className="relative text-xs text-muted text-center space-y-0.5">
-            <p><span className="text-dark-text font-medium">Segunda a sexta:</span> 9h às 16h</p>
-            <p><span className="text-dark-text font-medium">Sábado:</span> 8h às 10h</p>
-            <p><span className="text-dark-text font-medium">Domingo:</span> sem expedição</p>
-          </div>
+        <div className="relative rounded-3xl bg-gradient-to-br from-accent/50 via-accent/20 to-transparent p-[1px] overflow-hidden shadow-[0_8px_40px_-12px_rgba(59,130,246,0.35)]">
+          <div className="relative bg-dark-surface rounded-3xl p-6 space-y-5 overflow-hidden">
+            <div className="pointer-events-none absolute -top-20 -right-20 w-56 h-56 rounded-full bg-accent/15 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-20 -left-20 w-56 h-56 rounded-full bg-accent/10 blur-3xl" />
 
-          {shippingLinkMsRemaining !== null && shippingLinkMsRemaining > 0 ? (
-            <div className="relative flex flex-col items-center gap-2 py-4">
-              <span className="text-xs text-muted uppercase tracking-wider">Libera em</span>
-              <span className="text-3xl font-extrabold text-dark-text tabular-nums tracking-tight">
-                {formatCountdownLong(shippingLinkMsRemaining)}
-              </span>
-              <span className="text-sm text-dark-text font-medium mt-1">
-                {formatPremiumDate(order.shipping_link_eta)}
-              </span>
+            <div className="relative flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/15 border border-accent/40 w-fit mx-auto animate-pulse-accent">
+              <Clock size={14} className="text-accent" />
+              <p className="text-sm font-bold text-dark-text uppercase tracking-wide">Pagamento confirmado</p>
             </div>
-          ) : (
-            <p className="relative text-sm text-dark-text font-medium">
-              Já está no prazo — assim que você recarregar esta página o link deve aparecer.
+
+            <p className="relative text-sm text-muted text-center max-w-sm mx-auto">
+              Seu pagamento foi confirmado fora do nosso horário de expedição. O link de pagamento do
+              frete é liberado automaticamente assim que abrir o próximo expediente.
             </p>
-          )}
+
+            {/* Horário de expedição — bem visível, não mais texto pequeno escondido */}
+            <div className="relative grid grid-cols-3 gap-2">
+              <div className="flex flex-col items-center gap-1.5 bg-dark-alt rounded-2xl border border-dark-border p-3 text-center">
+                <CalendarClock size={18} className="text-accent" />
+                <p className="text-[11px] text-muted leading-tight">Seg a sexta</p>
+                <p className="text-sm font-bold text-dark-text leading-tight">9h–16h</p>
+              </div>
+              <div className="flex flex-col items-center gap-1.5 bg-dark-alt rounded-2xl border border-dark-border p-3 text-center">
+                <CalendarClock size={18} className="text-accent" />
+                <p className="text-[11px] text-muted leading-tight">Sábado</p>
+                <p className="text-sm font-bold text-dark-text leading-tight">8h–10h</p>
+              </div>
+              <div className="flex flex-col items-center gap-1.5 bg-dark-alt rounded-2xl border border-danger/30 p-3 text-center">
+                <CalendarOff size={18} className="text-danger" />
+                <p className="text-[11px] text-muted leading-tight">Domingo</p>
+                <p className="text-sm font-bold text-danger leading-tight">Fechado</p>
+              </div>
+            </div>
+
+            {shippingLinkMsRemaining !== null && shippingLinkMsRemaining > 0 ? (
+              <div className="relative rounded-2xl bg-gradient-to-br from-accent to-accent-light p-[1px]">
+                <div className="flex flex-col items-center gap-1 py-5 rounded-2xl bg-dark-alt">
+                  <span className="text-xs text-accent font-bold uppercase tracking-widest">Libera em</span>
+                  <span className="text-4xl font-extrabold text-dark-text tabular-nums tracking-tight drop-shadow-[0_0_20px_rgba(59,130,246,0.5)]">
+                    {formatCountdownLong(shippingLinkMsRemaining)}
+                  </span>
+                  <span className="text-sm text-muted font-medium mt-1">
+                    {formatPremiumDate(order.shipping_link_eta)}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <p className="relative text-sm text-dark-text font-medium text-center">
+                Já está no prazo — assim que você recarregar esta página o link deve aparecer.
+              </p>
+            )}
+          </div>
         </div>
       )}
 
