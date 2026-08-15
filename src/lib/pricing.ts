@@ -5,26 +5,27 @@ import type { PriceTier } from "@/types";
 // Compartilhado entre client (cart-store) e server (checkout) para nunca divergir.
 export const INSURANCE_PERCENTAGE = 0.25;
 
-// Cartão de crédito — taxas reais da adquirente (PYX Gate, tabela Mastercard/
-// "Bandeiras padrão" — a mais cara, usada como referência única pra não gerar
-// prejuízo com nenhuma bandeira). A taxa sobe conforme o número de parcelas,
-// por isso NÃO é um markup fixo: índice 0 = à vista (1x), índice 13 = 14x.
-// Calculado sempre no servidor, nunca digitado manualmente pelo admin.
+// Cartão de crédito — taxas reais da conta PYX Gate (painel "Minhas Taxas",
+// taxa única por parcela, vale pra qualquer bandeira). A taxa sobe conforme
+// o número de parcelas, por isso NÃO é um markup fixo: índice 0 = à vista
+// (1x), índice 13 = 14x. Calculado sempre no servidor, nunca digitado
+// manualmente pelo admin. Se a PYX Gate reajustar as taxas da conta, precisa
+// atualizar aqui manualmente — não é buscado ao vivo da API.
 export const CARD_INSTALLMENT_RATES: number[] = [
-  0.0685, // 1x  (à vista)
-  0.0815, // 2x
-  0.0884, // 3x
-  0.0954, // 4x
-  0.1024, // 5x
-  0.1095, // 6x
-  0.1186, // 7x
-  0.1259, // 8x
-  0.1331, // 9x
-  0.1405, // 10x
-  0.1479, // 11x
-  0.1554, // 12x
-  0.1629, // 13x
-  0.1705, // 14x
+  0.0885, // 1x  (à vista)
+  0.1015, // 2x
+  0.1084, // 3x
+  0.1154, // 4x
+  0.1224, // 5x
+  0.1295, // 6x
+  0.1386, // 7x
+  0.1459, // 8x
+  0.1531, // 9x
+  0.1605, // 10x
+  0.1679, // 11x
+  0.1754, // 12x
+  0.1829, // 13x
+  0.1905, // 14x
 ];
 
 export const MAX_CARD_INSTALLMENTS = CARD_INSTALLMENT_RATES.length;
