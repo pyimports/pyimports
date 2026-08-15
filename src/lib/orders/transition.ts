@@ -33,7 +33,9 @@ export async function transitionOrderStatus(
   const currentStatus = order.status as OrderStatus;
   if (currentStatus === newStatus) return {};
 
-  const validNext = VALID_TRANSITIONS[currentStatus];
+  // Fallback pra [] — pedidos com status anterior ao pipeline atual não têm
+  // entrada em VALID_TRANSITIONS (ver mesmo cuidado em OrderStatusSelect.tsx).
+  const validNext = VALID_TRANSITIONS[currentStatus] ?? [];
   if (!validNext.includes(newStatus)) {
     return { error: `Transição inválida: ${ORDER_STATUS_LABELS[currentStatus]} → ${ORDER_STATUS_LABELS[newStatus]}` };
   }

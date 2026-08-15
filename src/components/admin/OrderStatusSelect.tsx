@@ -26,7 +26,11 @@ export const OrderStatusSelect = ({ currentStatus, orderId, onStatusChange }: Pr
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const next = VALID_TRANSITIONS[currentStatus];
+  // Fallback pra [] — pedidos antigos podem ter um status que não existe
+  // mais no fluxo atual (ex: valores anteriores ao novo pipeline de frete),
+  // e VALID_TRANSITIONS não tem entrada pra eles. Sem isso, next.map()
+  // adiante quebra a tela inteira de pedidos.
+  const next = VALID_TRANSITIONS[currentStatus] ?? [];
 
   const buttonRef = useRef<HTMLButtonElement>(null);
   // Calculada na hora de abrir (não via CSS) — o botão vive dentro de uma
