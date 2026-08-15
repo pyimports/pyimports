@@ -462,21 +462,28 @@ export function PagamentoClient({
                     <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-72 h-72 rounded-full bg-accent/20 blur-3xl" />
 
                     <div className="relative p-5 rounded-3xl bg-gradient-to-br from-accent to-accent-light shadow-[0_8px_30px_-4px_rgba(59,130,246,0.45)]">
-                      <div className="p-4 bg-white rounded-2xl">
+                      <div className="relative p-4 bg-white rounded-2xl">
                         {pixCode ? (
-                          <QRCodeSVG
-                            value={pixCode}
-                            size={280}
-                            level="H"
-                            fgColor="#0f172a"
-                            bgColor="#ffffff"
-                            imageSettings={{
-                              src: "/icon.png",
-                              height: 56,
-                              width: 56,
-                              excavate: true,
-                            }}
-                          />
+                          <>
+                            <QRCodeSVG
+                              value={pixCode}
+                              size={280}
+                              level="H"
+                              fgColor="#0f172a"
+                              bgColor="#ffffff"
+                            />
+                            {/* Badge central azul (cor padrão do site) com a
+                                logo PY de fundo transparente por cima — em
+                                vez do quadrado branco que o excavate da lib
+                                deixava. O nível de correção "H" já tolera
+                                esse tanto de área coberta sem quebrar a leitura. */}
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                              <div className="w-16 h-16 rounded-xl bg-accent flex items-center justify-center shadow-md">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src="/py-logo-transparent.png" alt="" className="w-11 h-11 object-contain" />
+                              </div>
+                            </div>
+                          </>
                         ) : (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={pixQrUrl ?? undefined} alt="QR Code Pix" className="w-[280px] h-[280px] object-contain" />
