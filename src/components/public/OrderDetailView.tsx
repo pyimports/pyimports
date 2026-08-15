@@ -645,7 +645,7 @@ export function OrderDetailView({ order, cpf }: Props) {
       {order.shipping_label_url && (
         <>
           {effectiveStatus === "label_issued" && (
-            <p className="text-center text-base sm:text-lg font-extrabold uppercase tracking-wide text-accent animate-pulse-accent">
+            <p className="text-center text-base sm:text-lg font-extrabold uppercase tracking-wide animate-pulse-gold-text">
               Clique aqui pra conferir sua etiqueta de envio!!
             </p>
           )}

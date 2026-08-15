@@ -201,6 +201,16 @@
     50% { box-shadow: 0 0 0 10px rgba(245, 185, 40, 0); }
   }
 
+  /* Versão pra texto puro (sem fundo pra "brilhar") — pulsa a cor entre dois
+     tons de dourado, pra chamar atenção sem nunca ficar ilegível/apagado. */
+  .animate-pulse-gold-text {
+    animation: pulse-gold-text 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse-gold-text {
+    0%, 100% { color: #fbbf24; }
+    50% { color: #fde68a; }
+  }
+
   .animate-fade-in {
     animation: fade-in 0.3s ease-out;
   }
