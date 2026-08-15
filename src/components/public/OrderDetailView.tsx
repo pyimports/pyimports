@@ -48,14 +48,16 @@ function formatRemaining(ms: number): string {
 // diferente de formatRemaining, que só mostra h/min (bom o bastante pra
 // janela de 30min da confirmação da etiqueta).
 function formatCountdownLong(ms: number): string {
-  const totalMinutes = Math.max(0, Math.floor(ms / 60000));
-  const days = Math.floor(totalMinutes / (60 * 24));
-  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
-  const minutes = totalMinutes % 60;
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
   const parts: string[] = [];
   if (days > 0) parts.push(`${days}d`);
   if (days > 0 || hours > 0) parts.push(`${hours}h`);
   parts.push(`${minutes}min`);
+  parts.push(`${seconds}s`);
   return parts.join(" ");
 }
 
@@ -155,7 +157,9 @@ export function OrderDetailView({ order, cpf }: Props) {
   useEffect(() => {
     const hasLinkCountdown = effectiveStatus === "payment_confirmed" && !!order.shipping_link_eta;
     if (effectiveStatus !== "label_issued" && !hasLinkCountdown) return;
-    const tick = setInterval(() => setNow(Date.now()), 30_000);
+    // 1s pra mostrar segundos correndo de verdade no contador de liberação
+    // do link de frete (antes era 30s, ficava "parado" olhando pro usuário).
+    const tick = setInterval(() => setNow(Date.now()), 1_000);
     return () => clearInterval(tick);
   }, [effectiveStatus, order.shipping_link_eta]);
 
