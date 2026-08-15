@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { BannerSlide } from "@/components/shared/BannerSlide";
 import type { HomeBanner } from "@/types";
 
@@ -99,24 +98,10 @@ export const HeroBannerCarousel = ({ banners }: HeroBannerCarouselProps) => {
         </div>
       ))}
 
-      {/* Setas — só com > 1 banner */}
+      {/* Sem setas laterais — atrapalhavam a leitura do texto do banner.
+          Navegação continua disponível via dots, swipe (mobile) e autoplay. */}
       {total > 1 && (
         <>
-          <button
-            onClick={prev}
-            aria-label="Banner anterior"
-            className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full backdrop-blur-sm bg-black/30 hover:bg-black/55 active:bg-black/70 border border-white/20 hover:border-accent/60 hover:shadow-[0_0_16px_rgba(59, 130, 246,0.3)] flex items-center justify-center text-white transition-all duration-200 touch-manipulation"
-          >
-            <ChevronLeft size={22} />
-          </button>
-          <button
-            onClick={next}
-            aria-label="Próximo banner"
-            className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full backdrop-blur-sm bg-black/30 hover:bg-black/55 active:bg-black/70 border border-white/20 hover:border-accent/60 hover:shadow-[0_0_16px_rgba(59, 130, 246,0.3)] flex items-center justify-center text-white transition-all duration-200 touch-manipulation"
-          >
-            <ChevronRight size={22} />
-          </button>
-
           {/* Indicadores / dots */}
           <div className="absolute bottom-5 sm:bottom-7 left-0 right-0 z-20 flex justify-center gap-2">
             {banners.map((_, i) => (
