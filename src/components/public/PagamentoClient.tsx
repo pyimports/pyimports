@@ -109,10 +109,12 @@ export function PagamentoClient({
 
   const hasPix = !!(pixQrUrl || pixCode);
   // Reflete a escolha feita no checkout (?method=pix|card) — se o cliente já
-  // escolheu cartão lá, a tela de pagamento já abre na aba certa.
-  const [activeTab, setActiveTab] = useState<"pix" | "card">(
-    searchParams.get("method") === "card" ? "card" : "pix"
-  );
+  // escolheu lá, a tela de pagamento abre só naquela opção, sem mostrar a
+  // outra (evita confundir quem já decidiu Pix e vê Cartão do lado, e
+  // vice-versa). Só mostra as duas abas quando não veio nenhuma escolha
+  // prévia (link antigo, acesso direto à URL).
+  const chosenMethod = searchParams.get("method") === "card" ? "card" : searchParams.get("method") === "pix" ? "pix" : null;
+  const [activeTab, setActiveTab] = useState<"pix" | "card">(chosenMethod === "card" ? "card" : "pix");
 
   const initialSeconds = expiresAt
     ? Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000))
@@ -425,8 +427,9 @@ export function PagamentoClient({
 
         {hasPix ? (
           <>
-            {/* Seletor Pix / Cartão — cartão só aparece quando CARD_PAYMENT_ENABLED */}
-            {CARD_PAYMENT_ENABLED && (
+            {/* Seletor Pix / Cartão — só aparece se o cliente não escolheu
+                ainda no checkout (link antigo/acesso direto) */}
+            {CARD_PAYMENT_ENABLED && !chosenMethod && (
               <div className="flex gap-2 bg-dark-alt rounded-xl p-1 mb-6">
                 <button
                   onClick={() => setActiveTab("pix")}
