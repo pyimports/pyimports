@@ -3,14 +3,14 @@
 import React, { useRef, useState, useTransition } from "react";
 import {
   Plus, Trash2, Eye, EyeOff, Upload, X, CheckCircle2,
-  AlertCircle, Monitor, Smartphone, RefreshCw, Info,
+  AlertCircle, Monitor, Smartphone, RefreshCw, Info, GripVertical,
 } from "lucide-react";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { Select } from "@/components/common/Select";
 import { Toggle } from "@/components/common/Toggle";
 import {
-  createBanner, updateBanner, deleteBanner, toggleBannerActive,
+  createBanner, updateBanner, deleteBanner, toggleBannerActive, reorderBanners,
 } from "@/lib/actions/banners";
 import type { HomeBanner } from "@/types";
 
@@ -312,6 +312,8 @@ export const BannersClient = ({ initialBanners, categoryOptions, productOptions 
   const [isPending, startTransition] = useTransition();
   const [showPreview, setShowPreview] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState(0);
+  const [draggedId, setDraggedId]   = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   const showToast = (type: "ok" | "err", msg: string) => {
     setToast({ type, msg });
@@ -500,6 +502,28 @@ export const BannersClient = ({ initialBanners, categoryOptions, productOptions 
       const res = await toggleBannerActive(id, !current);
       if ("error" in res) { showToast("err", res.error); return; }
       setBanners((prev) => prev.map((b) => b.id === id ? { ...b, is_active: !current } : b));
+    });
+  };
+
+  const handleReorderDrop = (targetId: string) => {
+    const sourceId = draggedId;
+    setDraggedId(null);
+    setDragOverId(null);
+    if (!sourceId || sourceId === targetId) return;
+
+    const fromIdx = banners.findIndex((b) => b.id === sourceId);
+    const toIdx = banners.findIndex((b) => b.id === targetId);
+    if (fromIdx === -1 || toIdx === -1) return;
+
+    const reordered = [...banners];
+    const [moved] = reordered.splice(fromIdx, 1);
+    reordered.splice(toIdx, 0, moved);
+    const orderedIds = reordered.map((b) => b.id);
+
+    setBanners(reordered.map((b, idx) => ({ ...b, display_order: idx })));
+    startTransition(async () => {
+      const res = await reorderBanners(orderedIds);
+      if (res.error) showToast("err", res.error);
     });
   };
 
@@ -754,11 +778,37 @@ export const BannersClient = ({ initialBanners, categoryOptions, productOptions 
         </div>
       ) : (
         <div className="space-y-3">
+          {banners.length > 1 && (
+            <p className="text-xs text-muted flex items-center gap-1.5">
+              <GripVertical size={13} />
+              Arraste os banners pra definir a ordem em que aparecem na home.
+            </p>
+          )}
           {banners.map((b) => (
             <div
               key={b.id}
-              className="bg-dark-surface border border-dark-border rounded-2xl p-4 flex gap-4 items-center"
+              draggable={banners.length > 1}
+              onDragStart={() => setDraggedId(b.id)}
+              onDragOver={(e) => {
+                e.preventDefault();
+                if (draggedId && b.id !== draggedId) setDragOverId(b.id);
+              }}
+              onDragLeave={() => setDragOverId((prev) => (prev === b.id ? null : prev))}
+              onDrop={(e) => { e.preventDefault(); handleReorderDrop(b.id); }}
+              onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
+              className={[
+                "bg-dark-surface border border-dark-border rounded-2xl p-4 flex gap-4 items-center transition-all",
+                banners.length > 1 ? "cursor-grab active:cursor-grabbing" : "",
+                draggedId === b.id ? "opacity-40" : "",
+                dragOverId === b.id ? "ring-1 ring-inset ring-accent/40 bg-accent/5" : "",
+              ].join(" ")}
             >
+              {banners.length > 1 && (
+                <span className="text-muted/60 flex-shrink-0">
+                  <GripVertical size={16} />
+                </span>
+              )}
+
               {/* Thumbnail desktop */}
               <div className="relative w-28 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-dark-alt">
                 {/* eslint-disable-next-line @next/next/no-img-element */}

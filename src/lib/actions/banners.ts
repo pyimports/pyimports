@@ -186,3 +186,29 @@ export async function toggleBannerActive(
 ): Promise<{ ok: true } | { error: string }> {
   return updateBanner(id, { is_active });
 }
+
+// ---------------------------------------------------------------------------
+// reorderBanners — persiste a nova ordem de exibição dos banners da home,
+// definida por drag-and-drop no painel admin. `orderedIds` é a lista
+// completa de IDs na ordem final desejada; cada banner recebe
+// display_order = sua posição (índice) nessa lista.
+// ---------------------------------------------------------------------------
+
+export async function reorderBanners(orderedIds: string[]): Promise<{ error?: string }> {
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
+  const service = createServiceClient();
+
+  const results = await Promise.all(
+    orderedIds.map((id, index) =>
+      service.from("home_banners").update({ display_order: index }).eq("id", id)
+    )
+  );
+
+  const failed = results.find((r) => r.error);
+  if (failed?.error) return { error: failed.error.message };
+
+  revalidatePath("/");
+  revalidatePath("/admin/banners");
+  return {};
+}
