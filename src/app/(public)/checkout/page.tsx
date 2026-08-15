@@ -28,6 +28,7 @@ export default function CheckoutPage() {
     getTotalPix,
     coupon_code,
     insurance_enabled,
+    clearCart,
   } = useCartStore();
 
   const [name,         setName]         = useState("");
@@ -94,6 +95,10 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Pedido criado com sucesso — limpa o carrinho, senão os mesmos itens
+    // continuam aparecendo pro cliente depois (bug real relatado: item
+    // "fantasma" ficava no carrinho mesmo após finalizar o pedido).
+    clearCart();
     router.push(`/pagamento/${result.orderId}?method=${paymentMethod}`);
   };
 
