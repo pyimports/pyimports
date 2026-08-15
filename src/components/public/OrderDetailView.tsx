@@ -398,7 +398,7 @@ export function OrderDetailView({ order, cpf }: Props) {
               </>
             ) : (
               <>
-                Seu Pix foi confirmado numa sexta, sábado ou domingo — dias sem expedição. O link de
+                Seu pagamento foi confirmado numa sexta, sábado ou domingo — dias sem expedição. O link de
                 pagamento do frete é liberado automaticamente no próximo dia útil, sempre pela manhã.
               </>
             )}
