@@ -119,7 +119,7 @@ export async function maybeReleaseShippingLink(
   return { status: "shipping_link_pending", shipping_payment_link: chosen.url };
 }
 
-const LABEL_CONFIRMATION_WINDOW_HOURS = 24;
+const LABEL_CONFIRMATION_WINDOW_HOURS = 0.5; // 30 minutos
 
 interface OrderForAutoComplete {
   id: string;
@@ -132,7 +132,7 @@ export interface AutoCompleteResult {
 }
 
 // Mesmo padrão sem cron do release do link acima: se o admin emitiu a
-// etiqueta e o cliente não confirmou em 24h, o pedido avança sozinho pra
+// etiqueta e o cliente não confirmou em 30min, o pedido avança sozinho pra
 // "Pedido Finalizado" na próxima vez que alguém ler esse pedido (tracking
 // público ou admin) — não trava o fluxo esperando uma ação do cliente.
 export async function maybeAutoCompleteOrder(
@@ -149,7 +149,7 @@ export async function maybeAutoCompleteOrder(
     order.id,
     "completed",
     "system",
-    "Cliente não confirmou a etiqueta em 24h — pedido finalizado automaticamente"
+    "Cliente não confirmou a etiqueta em 30min — pedido finalizado automaticamente"
   );
   if (transitionError) return null;
 

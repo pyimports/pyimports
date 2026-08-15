@@ -82,7 +82,7 @@ const INVALID_LABEL_STATUS_MESSAGE = "Esse pedido não está aguardando confirma
 // Segunda Server Action pública de escrita — mesmo padrão de segurança da
 // anterior (rate limit + CPF batendo com o pedido). O cliente confirma que
 // viu a etiqueta e está tudo certo; se ele nunca confirmar, o pedido avança
-// sozinho pra "completed" depois de 24h (ver maybeAutoCompleteOrder).
+// sozinho pra "completed" depois de 30min (ver maybeAutoCompleteOrder).
 export async function confirmLabelReceived(
   orderNumber: string,
   cpfRaw: string

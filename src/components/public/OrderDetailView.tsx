@@ -34,7 +34,7 @@ interface Props {
   cpf: string;
 }
 
-const LABEL_CONFIRMATION_WINDOW_HOURS = 24;
+const LABEL_CONFIRMATION_WINDOW_HOURS = 0.5; // 30 minutos
 
 function formatRemaining(ms: number): string {
   const totalMinutes = Math.max(0, Math.floor(ms / 60000));
@@ -46,7 +46,7 @@ function formatRemaining(ms: number): string {
 
 // Contagem "d h min" pra prazos longos (o cartão libera em até 7 dias) —
 // diferente de formatRemaining, que só mostra h/min (bom o bastante pra
-// janela de 24h da confirmação da etiqueta).
+// janela de 30min da confirmação da etiqueta).
 function formatCountdownLong(ms: number): string {
   const totalMinutes = Math.max(0, Math.floor(ms / 60000));
   const days = Math.floor(totalMinutes / (60 * 24));
@@ -148,7 +148,7 @@ export function OrderDetailView({ order, cpf }: Props) {
   const [labelConfirmError, setLabelConfirmError] = useState("");
   const [labelConfirmModalOpen, setLabelConfirmModalOpen] = useState(false);
 
-  // Contador regressivo (auto-finalização em 24h da etiqueta, ou liberação do
+  // Contador regressivo (auto-finalização em 30min da etiqueta, ou liberação do
   // link de frete) — só precisa "tickar" enquanto uma dessas duas telas
   // estiver realmente ativa.
   const [now, setNow] = useState(() => Date.now());
@@ -699,7 +699,7 @@ export function OrderDetailView({ order, cpf }: Props) {
       )}
 
       {/* Confirmação da etiqueta — aparece assim que o admin emite. Se o
-          cliente não confirmar, o pedido finaliza sozinho em 24h (ver
+          cliente não confirmar, o pedido finaliza sozinho em 30min (ver
           maybeAutoCompleteOrder), então o contador aqui é só transparência,
           não uma ameaça: o pedido segue de qualquer jeito. */}
       {effectiveStatus === "label_issued" && (
@@ -774,7 +774,7 @@ export function OrderDetailView({ order, cpf }: Props) {
 
       {/* Mostra sempre que o pedido está finalizado — seja porque acabou de
           confirmar (override local) ou porque já estava assim quando a
-          página carregou (ex: auto-finalizado depois de 24h sem confirmar
+          página carregou (ex: auto-finalizado depois de 30min sem confirmar
           a etiqueta). Daqui pra frente o rastreio é só pelo app da Shopee. */}
       {effectiveStatus === "completed" && (
         <div className="relative bg-dark-surface rounded-2xl border border-success/30 shadow-[0_8px_35px_-10px_rgba(16,185,129,0.35)] p-6 sm:p-8 text-center overflow-hidden">

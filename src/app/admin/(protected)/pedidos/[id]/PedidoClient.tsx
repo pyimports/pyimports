@@ -404,7 +404,7 @@ export function PedidoClient({ order }: Props) {
                 <div className="mt-3 pt-3 border-t border-dark-border">
                   <p className="text-xs text-muted">
                     Aguardando o cliente confirmar a etiqueta. Se ele não confirmar, o pedido
-                    finaliza automaticamente 24h após o envio
+                    finaliza automaticamente 30min após o envio
                     {order.label_issued_at && (
                       <> (enviada em {new Date(order.label_issued_at).toLocaleString("pt-BR")})</>
                     )}
