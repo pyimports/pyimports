@@ -48,7 +48,18 @@ export async function pyxgateFetch<T>(
 
   if (!res.ok) {
     const errorBody = await res.text().catch(() => "");
-    throw new Error(`PYX Gate ${init.method} ${path} falhou (${res.status}): ${errorBody}`);
+    // Log completo (com status/path/corpo cru) fica só no servidor — o que
+    // vira Error aqui pode se propagar até uma mensagem mostrada pro
+    // cliente (ver checkout.ts), então nunca deve ser JSON cru.
+    console.error(`PYX Gate ${init.method} ${path} falhou (${res.status}):`, errorBody);
+    let message = "Erro ao processar pagamento. Tente novamente em instantes.";
+    try {
+      const parsed = JSON.parse(errorBody) as { error?: { message?: string } };
+      if (parsed.error?.message) message = parsed.error.message;
+    } catch {
+      // corpo não veio como JSON — mantém a mensagem genérica
+    }
+    throw new Error(message);
   }
 
   return res.json() as Promise<T>;
