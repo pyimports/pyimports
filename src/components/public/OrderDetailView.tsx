@@ -557,7 +557,7 @@ export function OrderDetailView({ order, cpf }: Props) {
             <div className="rounded-xl overflow-hidden border border-dark-border">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/tutorial-id-pedido-shopee.jfif"
+                src="/IDDOPEDIDO.jpg"
                 alt="Onde encontrar o ID do pedido na Shopee"
                 className="w-full h-auto"
               />
