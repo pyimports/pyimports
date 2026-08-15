@@ -4,7 +4,7 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { checkAndRecordLookupAttempt } from "@/lib/order-lookup-rate-limit";
 import { digitsOnly, isValidCpf } from "@/lib/cpf";
 import { maskPhoneDisplay, maskEmailDisplay } from "@/lib/mask";
-import { maybeReleaseShippingLink, maybeAutoCompleteOrder, isBlockedReleaseDay, snapToMorningSaoPaulo, CARD_RELEASE_MORNING_HOUR } from "@/lib/orders/shipping-link";
+import { maybeReleaseShippingLink, maybeAutoCompleteOrder, nextReleaseWindowStart } from "@/lib/orders/shipping-link";
 import type { OrderStatus, PaymentStatus, PaymentMethod, OrderStatusHistory } from "@/types";
 
 // ---------------------------------------------------------------------------
@@ -37,9 +37,9 @@ export interface PublicOrderDetail {
   payment_method: PaymentMethod;
   payment_confirmed_at: string | null;
   // Preenchido quando o pedido ainda está esperando o link de frete liberar
-  // E a espera é "visível" pro cliente: sempre no cartão (7 dias), ou no Pix
-  // só quando a confirmação caiu numa sexta/sábado/domingo (sem expedição,
-  // ver shipping-link.ts) — Pix em dia útil libera na hora, sem aviso.
+  // E a espera é "visível" pro cliente: só quando a confirmação caiu fora do
+  // expediente (RELEASE_WINDOWS em shipping-link.ts) — dentro do expediente
+  // libera na hora, sem aviso.
   shipping_link_eta: string | null;
   created_at: string;
   subtotal: number;
@@ -221,35 +221,19 @@ async function performOrderLookup(cpfRaw: string): Promise<OrderListLookupResult
 
   const typedRows = rows as unknown as OrderPublicRow[];
 
-  const { data: shippingSettings } = await service
-    .from("store_settings_private")
-    .select("shipping_link_delay_card_hours, shipping_link_delay_pix_hours")
-    .eq("lock", true)
-    .single();
-  const cardDelayHours = Number(shippingSettings?.shipping_link_delay_card_hours ?? 0);
-  const pixDelayHours = Number(shippingSettings?.shipping_link_delay_pix_hours ?? 0);
-
   const shippingLinkEtas = new Map<string, string | null>();
 
-  // Sem cron: cada busca é a oportunidade de checar se algum pedido já passou
-  // do prazo (Pix/Cartão) pra liberar o link de frete — ver shipping-link.ts.
+  // Sem cron: cada busca é a oportunidade de checar se algum pedido já pode
+  // liberar o link de frete — ver shipping-link.ts.
   for (const row of typedRows) {
     // Data estimada de liberação do link de frete — mostrada pro cliente
-    // enquanto o pedido ainda está em "Pagamento Confirmado". Cartão sempre
-    // mostra (a espera de dias é normal); Pix só mostra quando a confirmação
-    // caiu numa sexta/sáb/dom (senão libera na hora, sem aviso nenhum).
-    // Empurra pro próximo dia útil de manhã, espelhando a regra real de
-    // liberação (maybeReleaseShippingLink).
+    // enquanto o pedido ainda está em "Pagamento Confirmado". Só aparece
+    // quando a confirmação caiu fora do expediente (RELEASE_WINDOWS); dentro
+    // do expediente libera na hora, sem aviso nenhum.
     if (row.status === "payment_confirmed" && row.payment_confirmed_at) {
-      const delayHours = row.payment_method === "card" ? cardDelayHours : pixDelayHours;
-      const rawEta = new Date(new Date(row.payment_confirmed_at).getTime() + delayHours * 60 * 60 * 1000);
-      const blockedFromStart = isBlockedReleaseDay(rawEta);
-
-      if (row.payment_method === "card" || blockedFromStart) {
-        let eta = snapToMorningSaoPaulo(rawEta, CARD_RELEASE_MORNING_HOUR);
-        while (isBlockedReleaseDay(eta)) {
-          eta = new Date(eta.getTime() + 24 * 60 * 60 * 1000);
-        }
+      const paymentConfirmedAt = new Date(row.payment_confirmed_at);
+      const eta = nextReleaseWindowStart(paymentConfirmedAt);
+      if (eta.getTime() > paymentConfirmedAt.getTime()) {
         shippingLinkEtas.set(row.id, eta.toISOString());
       }
     }

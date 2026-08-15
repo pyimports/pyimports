@@ -378,9 +378,9 @@ export function OrderDetailView({ order, cpf }: Props) {
         <OrderStatusTimeline currentStatus={effectiveStatus} history={order.status_history} />
       </div>
 
-      {/* Aviso de prazo do link de frete — sempre no cartão (7 dias), e no
-          Pix só quando a confirmação caiu numa sexta/sábado/domingo (senão
-          libera na hora, sem precisar de aviso nenhum). */}
+      {/* Aviso de prazo do link de frete — só aparece quando a confirmação
+          caiu fora do nosso expediente (RELEASE_WINDOWS em shipping-link.ts).
+          Dentro do expediente libera na hora, sem precisar de aviso nenhum. */}
       {effectiveStatus === "payment_confirmed" && order.shipping_link_eta && (
         <div className="relative bg-dark-surface rounded-2xl border border-accent/30 p-6 space-y-4 overflow-hidden">
           <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full bg-accent/10 blur-3xl" />
@@ -389,20 +389,14 @@ export function OrderDetailView({ order, cpf }: Props) {
             <p className="text-sm font-bold text-dark-text uppercase tracking-wide">Pagamento confirmado</p>
           </div>
           <p className="relative text-sm text-muted text-center">
-            {order.payment_method === "card" ? (
-              <>
-                Como o pagamento foi no cartão de crédito, o link de pagamento do frete é liberado
-                automaticamente em até 7 dias após a confirmação, sempre pela manhã. Sexta, sábado e
-                domingo não têm expedição — se o prazo cair nesses dias, a liberação passa pra próxima
-                segunda-feira.
-              </>
-            ) : (
-              <>
-                Seu pagamento foi confirmado numa sexta, sábado ou domingo — dias sem expedição. O link de
-                pagamento do frete é liberado automaticamente no próximo dia útil, sempre pela manhã.
-              </>
-            )}
+            Seu pagamento foi confirmado fora do nosso horário de expedição. O link de pagamento do frete
+            é liberado automaticamente assim que abrir o próximo expediente:
           </p>
+          <div className="relative text-xs text-muted text-center space-y-0.5">
+            <p><span className="text-dark-text font-medium">Segunda a sexta:</span> 9h às 16h</p>
+            <p><span className="text-dark-text font-medium">Sábado:</span> 8h às 10h</p>
+            <p><span className="text-dark-text font-medium">Domingo:</span> sem expedição</p>
+          </div>
 
           {shippingLinkMsRemaining !== null && shippingLinkMsRemaining > 0 ? (
             <div className="relative flex flex-col items-center gap-2 py-4">

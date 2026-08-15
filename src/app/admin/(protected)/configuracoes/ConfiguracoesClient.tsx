@@ -298,41 +298,29 @@ export function ConfiguracoesClient({ initialSettings, initialAdmins, currentAdm
               )}
             </SectionCard>
 
-            <SectionCard title="Tempo de liberação">
+            <SectionCard title="Horário de liberação">
               <p className="text-sm text-muted leading-relaxed">
-                Quantas horas depois da confirmação do pagamento o link de frete é liberado —
-                pode ser diferente para Pix e Cartão.
+                O link de pagamento do frete libera automaticamente pro cliente assim que o
+                pagamento é confirmado, sempre dentro do nosso expediente — igual pra Pix e
+                Cartão. Fora desse horário, libera assim que o próximo expediente abrir.
               </p>
-              <div className="flex flex-wrap gap-4">
-                <div className="max-w-[200px]">
-                  <Input
-                    label="Horas no Pix"
-                    type="number"
-                    min={0}
-                    step={1}
-                    className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    value={shippingForm.shipping_link_delay_pix_hours}
-                    onChange={(e) =>
-                      setShippingForm((prev) => ({ ...prev, shipping_link_delay_pix_hours: Number(e.target.value) }))
-                    }
-                  />
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+                <div className="bg-dark-alt rounded-xl border border-dark-border p-3">
+                  <p className="text-xs text-muted">Segunda a sexta</p>
+                  <p className="font-semibold text-dark-text">9h às 16h</p>
                 </div>
-                <div className="max-w-[200px]">
-                  <Input
-                    label="Horas no Cartão"
-                    type="number"
-                    min={0}
-                    step={1}
-                    className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    value={shippingForm.shipping_link_delay_card_hours}
-                    onChange={(e) =>
-                      setShippingForm((prev) => ({ ...prev, shipping_link_delay_card_hours: Number(e.target.value) }))
-                    }
-                  />
+                <div className="bg-dark-alt rounded-xl border border-dark-border p-3">
+                  <p className="text-xs text-muted">Sábado</p>
+                  <p className="font-semibold text-dark-text">8h às 10h</p>
+                </div>
+                <div className="bg-dark-alt rounded-xl border border-dark-border p-3">
+                  <p className="text-xs text-muted">Domingo</p>
+                  <p className="font-semibold text-dark-text">Sem expedição</p>
                 </div>
               </div>
               <p className="text-xs text-muted">
-                0 horas = liberação instantânea. Um pedido pago às 10h no Pix com 0h de atraso já mostra o link ao cliente na hora; no Cartão com 48h, só a partir das 10h do 3º dia.
+                Esse horário está fixo no código (src/lib/orders/shipping-link.ts) — não é
+                editável por aqui. Fala com quem mantém o site se precisar mudar.
               </p>
             </SectionCard>
 
