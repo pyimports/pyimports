@@ -6,8 +6,15 @@ import { checkAndRecordLookupAttempt } from "@/lib/order-lookup-rate-limit";
 import { digitsOnly, isValidCpf } from "@/lib/cpf";
 import { requireAdmin, requireAdminWrite } from "@/lib/auth/admin-guard";
 import { routes } from "@/lib/routes";
+import { brasiliaDateStringToUTC, brasiliaToday } from "@/lib/timezone";
 import type { CustomerReview, CustomerReviewProduct } from "@/types";
 import type { DbCustomerReview, Json } from "@/types/database.types";
+
+// Converte uma data "YYYY-MM-DD" (de um <input type="date">) pra meia-noite
+// de Brasília — sem isso, salvar "às 00:00 UTC" já é o dia anterior no
+// horário de Brasília (UTC-3), e a data exibida depois (formatDateShort, que
+// converte pra America/Sao_Paulo) ficava um dia atrás do que foi digitado.
+const dateOnlyToTimestamp = (dateStr: string): string => brasiliaDateStringToUTC(dateStr).toISOString();
 
 // ---------------------------------------------------------------------------
 // Avaliação enviada pelo próprio cliente, vinculada a um pedido real
@@ -109,7 +116,7 @@ export async function submitCustomerReview(
   if (!input.deliveryDate.trim() || Number.isNaN(new Date(input.deliveryDate).getTime())) {
     return { error: "Data de entrega inválida." };
   }
-  if (new Date(input.deliveryDate).getTime() > Date.now()) {
+  if (input.deliveryDate > brasiliaToday()) {
     return { error: "A data de entrega não pode ser no futuro." };
   }
   if (!input.description.trim() || input.description.trim().length < 5) {
@@ -271,14 +278,14 @@ export async function createManualCustomerReview(
     order_number: input.orderNumber.trim(),
     rating: input.rating,
     recommends: input.recommends,
-    purchase_date: new Date(input.purchaseDate).toISOString(),
+    purchase_date: dateOnlyToTimestamp(input.purchaseDate),
     delivery_date: input.deliveryDate,
     description: input.description.trim(),
     products: products as unknown as Json,
     images: input.images,
     status: "approved",
     reviewed_at: new Date().toISOString(),
-    created_at: new Date(input.publishedAt).toISOString(),
+    created_at: dateOnlyToTimestamp(input.publishedAt),
     is_manual: true,
   });
 
@@ -324,12 +331,12 @@ export async function updateManualCustomerReview(
       order_number: input.orderNumber.trim(),
       rating: input.rating,
       recommends: input.recommends,
-      purchase_date: new Date(input.purchaseDate).toISOString(),
+      purchase_date: dateOnlyToTimestamp(input.purchaseDate),
       delivery_date: input.deliveryDate,
       description: input.description.trim(),
       products: products as unknown as Json,
       images: input.images,
-      created_at: new Date(input.publishedAt).toISOString(),
+      created_at: dateOnlyToTimestamp(input.publishedAt),
     })
     .eq("id", id);
 

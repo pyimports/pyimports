@@ -5,6 +5,7 @@ import { resolveBasePrice, calculateQuantityDiscountPrice } from "@/lib/pricing"
 import { createPaymentPreferenceForOrder } from "@/lib/payments/create-preference";
 import { getPublicStoreSettings } from "@/lib/db/settings";
 import { digitsOnly, isValidCpf } from "@/lib/cpf";
+import { brasiliaToday } from "@/lib/timezone";
 
 // ---------------------------------------------------------------------------
 // O front-end nunca é fonte de verdade para preço/estoque/desconto. O
@@ -253,9 +254,10 @@ async function resolveCoupon(
   if (error || !coupon) return { error: "Cupom inválido." };
   if (!coupon.is_active) return { error: "Este cupom está inativo." };
 
-  // Comparação por string YYYY-MM-DD: independente de timezone do servidor.
-  // Validade: válido até o FIM do dia selecionado (expiration_date >= today).
-  const todayStr = new Date().toISOString().split("T")[0];
+  // Validade: válido até o FIM do dia selecionado (expiration_date >= today),
+  // sempre no calendário de Brasília — "hoje" em UTC pode já ser amanhã (ou
+  // ainda ontem) perto da virada da meia-noite local.
+  const todayStr = brasiliaToday();
   if (coupon.start_date && coupon.start_date > todayStr) {
     return { error: "Este cupom ainda não está válido." };
   }

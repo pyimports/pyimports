@@ -40,3 +40,12 @@ export function brasiliaDateStringToUTC(dateStr: string, dayOffset = 0): Date {
   const [y, m, d] = dateStr.split("-").map(Number);
   return new Date(Date.UTC(y, m - 1, d + dayOffset, 0, 0, 0, 0) + BR_OFFSET_MS);
 }
+
+// "YYYY-MM-DD" de hoje em horário de Brasília — usar sempre no lugar de
+// `new Date().toISOString().slice(0, 10)` (que dá a data em UTC: perto da
+// meia-noite ela já mostra o dia seguinte ao de Brasília). Usado como `max`
+// de <input type="date"> e em qualquer comparação "hoje" com data salva
+// como string (ex.: validade de cupom).
+export function brasiliaToday(): string {
+  return brasiliaDateKey(new Date().toISOString());
+}

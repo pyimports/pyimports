@@ -11,6 +11,7 @@ import {
   updateManualCustomerReview,
   type AdminCustomerReview,
 } from "@/lib/actions/customer-reviews";
+import { brasiliaDateKey, brasiliaToday } from "@/lib/timezone";
 
 interface Props {
   review?: AdminCustomerReview; // presente = modo edição
@@ -20,7 +21,9 @@ interface Props {
 
 const MAX_IMAGES = 4;
 
-const toDateInput = (iso: string) => iso.slice(0, 10);
+// Converte o timestamp salvo (UTC) pra "YYYY-MM-DD" no calendário de
+// Brasília, pra pré-preencher o <input type="date"> com o dia certo.
+const toDateInput = (iso: string) => brasiliaDateKey(iso);
 
 export function ManualReviewModal({ review, onClose, onSaved }: Props) {
   const isEditing = !!review;
@@ -34,7 +37,7 @@ export function ManualReviewModal({ review, onClose, onSaved }: Props) {
   const [purchaseDate, setPurchaseDate] = useState(review ? toDateInput(review.purchase_date) : "");
   const [deliveryDate, setDeliveryDate] = useState(review ? toDateInput(review.delivery_date) : "");
   const [publishedAt, setPublishedAt] = useState(
-    review ? toDateInput(review.created_at) : new Date().toISOString().slice(0, 10)
+    review ? toDateInput(review.created_at) : brasiliaToday()
   );
   const [description, setDescription] = useState(review?.description ?? "");
   const [existingImages, setExistingImages] = useState<string[]>(review?.images ?? []);
@@ -152,7 +155,7 @@ export function ManualReviewModal({ review, onClose, onSaved }: Props) {
             type="date"
             required
             value={purchaseDate}
-            max={new Date().toISOString().slice(0, 10)}
+            max={brasiliaToday()}
             onChange={(e) => setPurchaseDate(e.target.value)}
           />
           <Input
@@ -160,7 +163,7 @@ export function ManualReviewModal({ review, onClose, onSaved }: Props) {
             type="date"
             required
             value={deliveryDate}
-            max={new Date().toISOString().slice(0, 10)}
+            max={brasiliaToday()}
             onChange={(e) => setDeliveryDate(e.target.value)}
           />
           <Input

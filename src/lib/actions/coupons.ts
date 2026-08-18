@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/server";
 import { requireAdmin, requireAdminWrite } from "@/lib/auth/admin-guard";
+import { brasiliaToday } from "@/lib/timezone";
 import type { CouponType } from "@/types";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -225,9 +226,10 @@ export async function validateCouponPublic(
   if (error || !coupon) return { valid: false, error: "Cupom não encontrado." };
   if (!coupon.is_active)  return { valid: false, error: "Este cupom está inativo." };
 
-  // Comparação por string YYYY-MM-DD é independente de timezone do servidor.
-  // Validade: válido até o FIM do dia selecionado (expiration_date >= today).
-  const todayStr = new Date().toISOString().split("T")[0];
+  // Validade: válido até o FIM do dia selecionado (expiration_date >= today),
+  // sempre no calendário de Brasília — "hoje" em UTC pode já ser amanhã (ou
+  // ainda ontem) perto da virada da meia-noite local.
+  const todayStr = brasiliaToday();
   if (coupon.start_date && coupon.start_date > todayStr)
     return { valid: false, error: "Este cupom ainda não está válido." };
   if (coupon.expiration_date && coupon.expiration_date < todayStr)

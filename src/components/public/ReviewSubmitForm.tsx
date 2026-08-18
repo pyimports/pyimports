@@ -6,6 +6,7 @@ import { Input, Textarea } from "@/components/common/Input";
 import { Button } from "@/components/common/Button";
 import { maskCpf } from "@/lib/utils";
 import { formatDateShort } from "@/lib/formatters";
+import { brasiliaToday } from "@/lib/timezone";
 import { lookupReviewableOrders, submitCustomerReview, type ReviewableOrder } from "@/lib/actions/customer-reviews";
 
 type Step = "cpf" | "orders" | "form" | "success";
@@ -246,7 +247,7 @@ export function ReviewSubmitForm() {
             type="date"
             required
             value={deliveryDate}
-            max={new Date().toISOString().slice(0, 10)}
+            max={brasiliaToday()}
             onChange={(e) => setDeliveryDate(e.target.value)}
           />
 
