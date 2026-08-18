@@ -3,6 +3,7 @@ import { PublicFooter } from "@/components/layout/PublicFooter";
 import { WhatsAppButton } from "@/components/layout/WhatsAppButton";
 import { CartToast } from "@/components/public/CartToast";
 import { CartSettingsSync } from "@/components/public/CartSettingsSync";
+import { MaintenanceScreen } from "@/components/public/MaintenanceScreen";
 import { ProductCard } from "@/components/public/ProductCard";
 import { HeroBannerCarousel } from "@/components/public/HeroBannerCarousel";
 import { EmptyState } from "@/components/common/EmptyState";
@@ -11,13 +12,22 @@ import { getTopLevelCategories as dbGetTopLevelCategories } from "@/lib/db/categ
 import { getProductsByCategoryIds as dbGetProductsByCategoryIds } from "@/lib/db/products";
 import { getActiveAnnouncements } from "@/lib/db/announcements";
 import { getActiveBanners } from "@/lib/db/banners";
-import { getPublicStoreSettings } from "@/lib/db/settings";
+import { getPublicStoreSettings, isMaintenanceModeActive } from "@/lib/db/settings";
+import { generateStoreWhatsAppLink } from "@/lib/whatsapp";
 import { mockCategories } from "@/data/mock-categories";
 import { getProductsByCategoryIds as mockGetProductsByCategoryIds } from "@/data/mock-products";
 import type { Category, Product, Announcement, HomeBanner } from "@/types";
 
 export default async function HomePage() {
   const settings = await getPublicStoreSettings();
+
+  if (await isMaintenanceModeActive()) {
+    return (
+      <MaintenanceScreen
+        whatsappLink={generateStoreWhatsAppLink(settings.whatsapp_number, settings.whatsapp_default_message)}
+      />
+    );
+  }
 
   let categories: Category[];
   try {
