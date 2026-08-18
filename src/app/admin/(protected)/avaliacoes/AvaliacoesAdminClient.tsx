@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useTransition } from "react";
+import React, { useEffect, useMemo, useState, useTransition } from "react";
 import Image from "next/image";
 import { Star, Check, X, Trash2, Package } from "lucide-react";
 import { Badge } from "@/components/common/Badge";
@@ -41,6 +41,15 @@ export function AvaliacoesAdminClient({ initialReviews }: Props) {
   const [tab, setTab] = useState<CustomerReviewStatus>("pending");
   const [, startTransition] = useTransition();
   const [lightbox, setLightbox] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!lightbox) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [lightbox]);
 
   const counts = useMemo(() => {
     const c: Record<CustomerReviewStatus, number> = { pending: 0, approved: 0, rejected: 0 };
@@ -185,7 +194,7 @@ export function AvaliacoesAdminClient({ initialReviews }: Props) {
 
       {lightbox && (
         <div
-          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-6"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-6"
           onClick={() => setLightbox(null)}
         >
           <div className="relative max-w-2xl max-h-[80vh] w-full aspect-square">

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 
 interface Props {
@@ -9,6 +9,15 @@ interface Props {
 
 export function ReviewCardImages({ images }: Props) {
   const [lightbox, setLightbox] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!lightbox) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [lightbox]);
 
   if (images.length === 0) return null;
 
@@ -28,7 +37,7 @@ export function ReviewCardImages({ images }: Props) {
 
       {lightbox && (
         <div
-          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-6"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-6"
           onClick={() => setLightbox(null)}
         >
           <div className="relative max-w-2xl max-h-[80vh] w-full aspect-square">
