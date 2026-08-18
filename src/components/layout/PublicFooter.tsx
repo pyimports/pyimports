@@ -8,7 +8,7 @@ import type { Category } from "@/types";
 
 interface Props {
   categories: Category[];
-  whatsappNumber?: string;
+  whatsappNumber: string;
 }
 
 const WhatsAppIcon = () => (

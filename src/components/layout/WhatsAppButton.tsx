@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { STORE_WHATSAPP, generateStoreWhatsAppLink } from "@/lib/whatsapp";
+import { generateStoreWhatsAppLink } from "@/lib/whatsapp";
 
 export const WhatsAppButton = ({
-  phone = STORE_WHATSAPP,
+  phone,
   message,
 }: {
-  phone?: string;
+  phone: string;
   message?: string;
 }) => {
   const [hovered, setHovered] = useState(false);

@@ -19,6 +19,7 @@ import {
   Smartphone,
   MessageSquareQuote,
   Megaphone,
+  Star,
 } from "lucide-react";
 import { routes } from "@/lib/routes";
 import { logoutAdmin } from "@/lib/actions/auth";
@@ -40,6 +41,7 @@ const NAV_GROUPS = [
       { label: "Banners", href: routes.admin.banners, icon: Image },
       { label: "Avisos", href: routes.admin.anuncios, icon: Megaphone },
       { label: "Feedbacks", href: routes.admin.feedbacks, icon: MessageSquareQuote },
+      { label: "Avaliações", href: routes.admin.avaliacoes, icon: Star },
       { label: "Preview Mobile", href: routes.admin.previewMobile, icon: Smartphone },
     ],
   },

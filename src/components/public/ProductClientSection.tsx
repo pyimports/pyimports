@@ -20,7 +20,7 @@ interface ProductClientSectionProps {
   selectedVariant?: ProductVariant;
   selectedSize?: ProductVariantSize;
   colorSoldOut: boolean;
-  whatsappNumber?: string;
+  whatsappNumber: string;
 }
 
 export const ProductClientSection = ({ product, selectedVariant, selectedSize, colorSoldOut, whatsappNumber }: ProductClientSectionProps) => {

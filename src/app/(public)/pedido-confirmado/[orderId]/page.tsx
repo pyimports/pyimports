@@ -1,14 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CheckCircle2, MessageCircle, ArrowRight, LinkIcon, Tag } from "lucide-react";
+import { CheckCircle2, ArrowRight, LinkIcon, Tag } from "lucide-react";
 import { CheckoutSteps } from "@/components/public/CheckoutSteps";
 import { Container } from "@/components/common/SectionHeader";
 import { Button } from "@/components/common/Button";
 import { routes } from "@/lib/routes";
 import { formatCurrency } from "@/lib/formatters";
 import { getOrderByIdAdmin } from "@/lib/db/orders";
-import { getPublicStoreSettings } from "@/lib/db/settings";
-import { generateOrderWhatsAppLink, generateStoreWhatsAppLink } from "@/lib/whatsapp";
 
 export const metadata: Metadata = { title: "Pedido confirmado" };
 
@@ -18,9 +16,7 @@ export default async function PedidoConfirmadoPage({
   params: Promise<{ orderId: string }>;
 }) {
   const { orderId } = await params;
-  const settings = await getPublicStoreSettings();
 
-  let whatsappLink = generateStoreWhatsAppLink(settings.whatsapp_number, settings.whatsapp_default_message);
   let orderNumber: string | null = null;
   let orderTotal: number | null = null;
   try {
@@ -28,17 +24,6 @@ export default async function PedidoConfirmadoPage({
     if (order) {
       orderNumber = order.order_number;
       orderTotal = order.total;
-      whatsappLink = generateOrderWhatsAppLink({
-        orderNumber: order.order_number,
-        customerName: order.customer_name,
-        items: (order.items ?? []).map((i) => ({
-          name: i.product_name,
-          quantity: i.quantity,
-          unitPrice: i.unit_price_pix,
-        })),
-        total: order.total,
-        storePhone: settings.whatsapp_number,
-      });
     }
   } catch {
     // mantém fallback genérico se a busca do pedido falhar
@@ -110,15 +95,6 @@ export default async function PedidoConfirmadoPage({
               Acompanhar meu pedido
             </Button>
           </Link>
-          <a
-            href={whatsappLink}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Button variant="outline" fullWidth leftIcon={<MessageCircle size={16} />}>
-              Falar no WhatsApp
-            </Button>
-          </a>
           <Link href={routes.home}>
             <Button variant="ghost" fullWidth size="sm">
               Voltar à loja

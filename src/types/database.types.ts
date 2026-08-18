@@ -1219,6 +1219,45 @@ export type Database = {
         Relationships: [];
       };
 
+      customer_reviews: {
+        Row: {
+          id:             string;
+          order_id:       string;
+          customer_cpf:   string;
+          customer_name:  string;
+          order_number:   string;
+          rating:         number;
+          service_rating: string;
+          purchase_date:  string;
+          delivery_date:  string;
+          description:    string;
+          products:       Json;
+          images:         string[];
+          status:         string;
+          reviewed_at:    string | null;
+          created_at:     string;
+        };
+        Insert: {
+          id?:             string;
+          order_id:        string;
+          customer_cpf:    string;
+          customer_name:   string;
+          order_number:    string;
+          rating:          number;
+          service_rating:  string;
+          purchase_date:   string;
+          delivery_date:   string;
+          description:     string;
+          products?:       Json;
+          images?:         string[];
+          status?:         string;
+          reviewed_at?:    string | null;
+          created_at?:     string;
+        };
+        Update: Partial<Database["public"]["Tables"]["customer_reviews"]["Insert"]>;
+        Relationships: [];
+      };
+
     }; // fim Tables
 
     Views: Record<string, never>;
@@ -1276,3 +1315,4 @@ export type DbInventoryMovement2   = Tables<"inventory_movements">;
 export type DbNotification         = Tables<"notifications">;
 export type DbHomeBanner           = Tables<"home_banners">;
 export type DbReview               = Tables<"reviews">;
+export type DbCustomerReview       = Tables<"customer_reviews">;

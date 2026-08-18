@@ -374,6 +374,38 @@ export interface Review {
 }
 
 // =============================================
+// AVALIAÇÕES DE CLIENTES (customer_reviews) — enviadas pelo próprio cliente,
+// vinculadas a um pedido real (verificado por CPF), com aprovação do admin
+// antes de aparecer publicamente. Diferente de Review (depoimento digitado
+// manualmente pelo admin para a home).
+// =============================================
+
+export type CustomerReviewStatus = "pending" | "approved" | "rejected";
+export type ServiceRating = "pessimo" | "ruim" | "bom" | "excelente";
+
+export interface CustomerReviewProduct {
+  name: string;
+  quantity: number;
+}
+
+export interface CustomerReview {
+  id: string;
+  order_id: string;
+  order_number: string;
+  customer_name: string;
+  rating: number; // 1-5
+  service_rating: ServiceRating;
+  purchase_date: string;
+  delivery_date: string;
+  description: string;
+  products: CustomerReviewProduct[];
+  images: string[];
+  status: CustomerReviewStatus;
+  reviewed_at?: string;
+  created_at: string;
+}
+
+// =============================================
 // CLIENTE
 // =============================================
 

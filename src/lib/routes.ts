@@ -9,6 +9,7 @@ export const routes = {
   pedidoConfirmado: (orderId: string) => `/pedido-confirmado/${orderId}`,
   acompanharPedido: "/acompanhar-pedido",
   atendimento: "/atendimento",
+  avaliacoes: "/avaliacoes",
 
   admin: {
     login: "/admin/login",
@@ -27,6 +28,7 @@ export const routes = {
     banners: "/admin/banners",
     anuncios: "/admin/anuncios",
     feedbacks: "/admin/feedbacks",
+    avaliacoes: "/admin/avaliacoes",
     previewMobile: "/admin/preview-mobile",
   },
 } as const;

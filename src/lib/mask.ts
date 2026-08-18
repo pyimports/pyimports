@@ -27,3 +27,13 @@ export function maskEmailDisplay(email: string | null | undefined): string {
   const visible = user.slice(0, 2);
   return `${visible}${"*".repeat(Math.max(user.length - visible.length, 3))}@${domain}`;
 }
+
+// Nome completo → primeiro nome + inicial do sobrenome (ex.: "João Silva" →
+// "João S.") — usado nas avaliações públicas, que exibem o nome real do
+// cliente pra qualquer visitante do site.
+export function maskNameDisplay(name: string | null | undefined): string {
+  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "Cliente";
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.`;
+}

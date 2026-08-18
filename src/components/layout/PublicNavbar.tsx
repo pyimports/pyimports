@@ -38,6 +38,7 @@ export const PublicNavbar = ({ categories, announcements = [], whatsappNumber, w
     })),
     { label: "Acompanhar Pedido", href: routes.acompanharPedido, external: false },
     { label: "Atendimento", href: routes.atendimento, external: false },
+    { label: "Avaliações", href: routes.avaliacoes, external: false },
   ];
 
   useEffect(() => {

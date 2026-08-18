@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { Truck, MessageCircle, Copy, Check, ImageIcon, ExternalLink, CheckCircle2, FileText, X, Download, Clock, HelpCircle, Clipboard, ChevronDown, AlertTriangle, CalendarClock, CalendarOff } from "lucide-react";
+import { Truck, Headset, Copy, Check, ImageIcon, ExternalLink, CheckCircle2, FileText, X, Download, Clock, HelpCircle, Clipboard, ChevronDown, AlertTriangle, CalendarClock, CalendarOff } from "lucide-react";
 import { OrderStatusTimeline } from "@/components/public/OrderStatusTimeline";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
@@ -32,6 +32,7 @@ const PAYMENT_STATUS_VARIANT: Record<string, "success" | "danger" | "warning" | 
 interface Props {
   order: PublicOrderDetail;
   cpf: string;
+  whatsappNumber: string;
 }
 
 const LABEL_CONFIRMATION_WINDOW_HOURS = 0.5; // 30 minutos
@@ -73,7 +74,7 @@ function formatPremiumDate(iso: string): string {
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }
 
-export function OrderDetailView({ order, cpf }: Props) {
+export function OrderDetailView({ order, cpf, whatsappNumber }: Props) {
   const [copied, setCopied] = useState(false);
   const [showMoreInfo, setShowMoreInfo] = useState(false);
 
@@ -836,13 +837,14 @@ export function OrderDetailView({ order, cpf }: Props) {
           customerName: order.customer_name,
           items: order.items.map((i) => ({ name: i.product_name, quantity: i.quantity })),
           total: order.total,
+          storePhone: whatsappNumber,
         })}
         target="_blank"
         rel="noopener noreferrer"
         className="block"
       >
-        <Button variant="secondary" fullWidth leftIcon={<MessageCircle size={14} />}>
-          Falar no WhatsApp
+        <Button variant="secondary" fullWidth leftIcon={<Headset size={14} />}>
+          Alguma dúvida? Mande mensagem para o Suporte.
         </Button>
       </a>
     </div>

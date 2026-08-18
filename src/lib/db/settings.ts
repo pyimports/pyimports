@@ -29,7 +29,7 @@ function toPublicSettings(row: DbStoreSettingsPublic): PublicStoreSettings {
 
 const FALLBACK_PUBLIC_SETTINGS: PublicStoreSettings = {
   store_name: "PYimports",
-  whatsapp_number: "5511999999999",
+  whatsapp_number: "5519920136139",
   whatsapp_default_message: "Olá! Vim pela loja e tenho uma dúvida.",
   insurance_percentage: 0.25,
 };

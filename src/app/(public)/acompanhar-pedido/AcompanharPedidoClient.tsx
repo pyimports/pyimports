@@ -18,7 +18,7 @@ type SearchResult =
   | { kind: "list"; orders: PublicOrderDetail[] };
 
 interface Props {
-  whatsappNumber?: string;
+  whatsappNumber: string;
   whatsappMessage?: string;
 }
 
@@ -262,7 +262,7 @@ export default function AcompanharPedidoClient({ whatsappNumber, whatsappMessage
                 Voltar para meus pedidos
               </button>
             )}
-            <OrderDetailView key={showingDetail.order_number} order={showingDetail} cpf={cpf} />
+            <OrderDetailView key={showingDetail.order_number} order={showingDetail} cpf={cpf} whatsappNumber={whatsappNumber} />
           </div>
         )}
 

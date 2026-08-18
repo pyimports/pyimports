@@ -10,7 +10,7 @@ import type { Product, ProductVariant, ProductMedia } from "@/types";
 
 interface Props {
   product: Product;
-  whatsappNumber?: string;
+  whatsappNumber: string;
 }
 
 // Tamanhos ativos de uma variante — tamanho desativado no admin nunca
