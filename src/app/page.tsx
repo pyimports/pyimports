@@ -2,6 +2,7 @@ import { PublicNavbar } from "@/components/layout/PublicNavbar";
 import { PublicFooter } from "@/components/layout/PublicFooter";
 import { WhatsAppButton } from "@/components/layout/WhatsAppButton";
 import { CartToast } from "@/components/public/CartToast";
+import { CartSettingsSync } from "@/components/public/CartSettingsSync";
 import { ProductCard } from "@/components/public/ProductCard";
 import { HeroBannerCarousel } from "@/components/public/HeroBannerCarousel";
 import { EmptyState } from "@/components/common/EmptyState";
@@ -10,11 +11,14 @@ import { getTopLevelCategories as dbGetTopLevelCategories } from "@/lib/db/categ
 import { getProductsByCategoryIds as dbGetProductsByCategoryIds } from "@/lib/db/products";
 import { getActiveAnnouncements } from "@/lib/db/announcements";
 import { getActiveBanners } from "@/lib/db/banners";
+import { getPublicStoreSettings } from "@/lib/db/settings";
 import { mockCategories } from "@/data/mock-categories";
 import { getProductsByCategoryIds as mockGetProductsByCategoryIds } from "@/data/mock-products";
 import type { Category, Product, Announcement, HomeBanner } from "@/types";
 
 export default async function HomePage() {
+  const settings = await getPublicStoreSettings();
+
   let categories: Category[];
   try {
     categories = await dbGetTopLevelCategories();
@@ -49,7 +53,12 @@ export default async function HomePage() {
 
   return (
     <>
-      <PublicNavbar categories={categories} announcements={announcements} />
+      <PublicNavbar
+        categories={categories}
+        announcements={announcements}
+        whatsappNumber={settings.whatsapp_number}
+        whatsappMessage={settings.whatsapp_default_message}
+      />
       <main className="pt-24">
         <div className="pt-8 pb-16">
           <Container>
@@ -92,9 +101,10 @@ export default async function HomePage() {
           </Container>
         </div>
       </main>
-      <PublicFooter categories={categories} />
-      <WhatsAppButton />
+      <PublicFooter categories={categories} whatsappNumber={settings.whatsapp_number} />
+      <WhatsAppButton phone={settings.whatsapp_number} message={settings.whatsapp_default_message} />
       <CartToast />
+      <CartSettingsSync insurancePercentage={settings.insurance_percentage} />
     </>
   );
 }
