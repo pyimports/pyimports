@@ -101,7 +101,7 @@ export default async function AvaliacoesPage() {
                 </div>
 
                 <p className="text-xs text-muted">
-                  Comprou em {formatDateShort(review.purchase_date)} · Chegou em{" "}
+                  Comprou dia {formatDateShort(review.purchase_date)} · Chegou dia{" "}
                   {formatDateShort(review.delivery_date)}
                 </p>
 
