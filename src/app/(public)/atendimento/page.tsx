@@ -26,12 +26,6 @@ export default async function AtendimentoPage() {
           </p>
         </div>
 
-        <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="block mb-10">
-          <Button variant="accent" fullWidth size="lg" leftIcon={<MessageCircle size={18} />}>
-            Falar direto no WhatsApp
-          </Button>
-        </a>
-
         <div className="space-y-3">
           <FaqItem question="Como funciona a compra?" defaultOpen>
             <p>
