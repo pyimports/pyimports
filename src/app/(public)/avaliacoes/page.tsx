@@ -15,7 +15,7 @@ export default async function AvaliacoesPage() {
 
   return (
     <div className="py-12">
-      <Container>
+      <Container size="sm">
         <div className="text-center mb-10">
           <h1 className="text-2xl md:text-3xl font-bold text-dark-text mb-2">
             Avaliações dos clientes
@@ -25,102 +25,95 @@ export default async function AvaliacoesPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Coluna principal — resumo + lista */}
-          <div className="lg:col-span-2 space-y-6">
-            {totalCount > 0 && (
-              <div className="bg-dark-surface rounded-2xl border border-dark-border p-6 flex flex-col sm:flex-row items-center gap-6">
-                <div className="text-center flex-shrink-0">
-                  <p className="text-4xl font-bold text-dark-text">{averageRating.toFixed(1)}</p>
-                  <div className="flex items-center justify-center gap-0.5 mt-1">
+        <div className="space-y-6">
+          {totalCount > 0 && (
+            <div className="bg-dark-surface rounded-2xl border border-dark-border p-6 flex flex-col sm:flex-row items-center gap-6">
+              <div className="text-center flex-shrink-0">
+                <p className="text-4xl font-bold text-dark-text">{averageRating.toFixed(1)}</p>
+                <div className="flex items-center justify-center gap-0.5 mt-1">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Star
+                      key={n}
+                      size={16}
+                      className={n <= Math.round(averageRating) ? "fill-accent text-accent" : "text-dark-border"}
+                    />
+                  ))}
+                </div>
+                <p className="text-xs text-muted mt-1">
+                  {totalCount} avaliaç{totalCount !== 1 ? "ões" : "ão"}
+                </p>
+              </div>
+              <div className="flex-1 w-full space-y-1.5">
+                {[5, 4, 3, 2, 1].map((star) => {
+                  const count = starCounts[star - 1];
+                  const pct = totalCount > 0 ? (count / totalCount) * 100 : 0;
+                  return (
+                    <div key={star} className="flex items-center gap-2 text-xs text-muted">
+                      <span className="w-3">{star}</span>
+                      <Star size={11} className="fill-accent text-accent flex-shrink-0" />
+                      <div className="flex-1 h-1.5 bg-dark-alt rounded-full overflow-hidden">
+                        <div className="h-full bg-accent rounded-full" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="w-6 text-right">{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {reviews.length === 0 && (
+            <div className="bg-dark-surface rounded-2xl border border-dark-border p-10 text-center text-muted text-sm">
+              Ainda não temos avaliações publicadas. Seja o primeiro a avaliar sua compra!
+            </div>
+          )}
+
+          <div className="space-y-4">
+            {reviews.map((review) => (
+              <div key={review.id} className="bg-dark-surface rounded-2xl border border-dark-border p-5 space-y-3">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div>
+                    <p className="text-sm font-semibold text-dark-text">
+                      {maskNameDisplay(review.customer_name)}
+                    </p>
+                    <p className="text-xs text-muted mt-0.5">{formatDateShort(review.created_at)}</p>
+                  </div>
+                  <div className="flex items-center gap-0.5">
                     {[1, 2, 3, 4, 5].map((n) => (
                       <Star
                         key={n}
-                        size={16}
-                        className={n <= Math.round(averageRating) ? "fill-accent text-accent" : "text-dark-border"}
+                        size={14}
+                        className={n <= review.rating ? "fill-accent text-accent" : "text-dark-border"}
                       />
                     ))}
                   </div>
-                  <p className="text-xs text-muted mt-1">
-                    {totalCount} avaliaç{totalCount !== 1 ? "ões" : "ão"}
-                  </p>
                 </div>
-                <div className="flex-1 w-full space-y-1.5">
-                  {[5, 4, 3, 2, 1].map((star) => {
-                    const count = starCounts[star - 1];
-                    const pct = totalCount > 0 ? (count / totalCount) * 100 : 0;
-                    return (
-                      <div key={star} className="flex items-center gap-2 text-xs text-muted">
-                        <span className="w-3">{star}</span>
-                        <Star size={11} className="fill-accent text-accent flex-shrink-0" />
-                        <div className="flex-1 h-1.5 bg-dark-alt rounded-full overflow-hidden">
-                          <div className="h-full bg-accent rounded-full" style={{ width: `${pct}%` }} />
-                        </div>
-                        <span className="w-6 text-right">{count}</span>
-                      </div>
-                    );
-                  })}
+
+                {review.recommends ? (
+                  <Badge label="Recomenda" variant="success" size="sm" />
+                ) : (
+                  <Badge label="Não recomenda" variant="danger" size="sm" />
+                )}
+
+                <div className="flex items-start gap-2 text-xs text-muted">
+                  <Package size={13} className="flex-shrink-0 mt-0.5" />
+                  <span>{review.products.map((p) => `${p.name} (x${p.quantity})`).join(", ")}</span>
                 </div>
+
+                <p className="text-xs text-muted">
+                  Comprou em {formatDateShort(review.purchase_date)} · Chegou em{" "}
+                  {formatDateShort(review.delivery_date)}
+                </p>
+
+                <p className="text-sm text-dark-text leading-relaxed">{review.description}</p>
+
+                <ReviewCardImages images={review.images} />
               </div>
-            )}
-
-            {reviews.length === 0 && (
-              <div className="bg-dark-surface rounded-2xl border border-dark-border p-10 text-center text-muted text-sm">
-                Ainda não temos avaliações publicadas. Seja o primeiro a avaliar sua compra!
-              </div>
-            )}
-
-            <div className="space-y-4">
-              {reviews.map((review) => (
-                <div key={review.id} className="bg-dark-surface rounded-2xl border border-dark-border p-5 space-y-3">
-                  <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div>
-                      <p className="text-sm font-semibold text-dark-text">
-                        {maskNameDisplay(review.customer_name)}
-                      </p>
-                      <p className="text-xs text-muted mt-0.5">{formatDateShort(review.created_at)}</p>
-                    </div>
-                    <div className="flex items-center gap-0.5">
-                      {[1, 2, 3, 4, 5].map((n) => (
-                        <Star
-                          key={n}
-                          size={14}
-                          className={n <= review.rating ? "fill-accent text-accent" : "text-dark-border"}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  {review.recommends ? (
-                    <Badge label="Recomenda" variant="success" size="sm" />
-                  ) : (
-                    <Badge label="Não recomenda" variant="danger" size="sm" />
-                  )}
-
-                  <div className="flex items-start gap-2 text-xs text-muted">
-                    <Package size={13} className="flex-shrink-0 mt-0.5" />
-                    <span>{review.products.map((p) => `${p.name} (x${p.quantity})`).join(", ")}</span>
-                  </div>
-
-                  <p className="text-xs text-muted">
-                    Comprou em {formatDateShort(review.purchase_date)} · Chegou em{" "}
-                    {formatDateShort(review.delivery_date)}
-                  </p>
-
-                  <p className="text-sm text-dark-text leading-relaxed">{review.description}</p>
-
-                  <ReviewCardImages images={review.images} />
-                </div>
-              ))}
-            </div>
+            ))}
           </div>
 
-          {/* Coluna lateral — enviar avaliação */}
-          <div>
-            <div className="sticky top-24">
-              <ReviewSubmitForm />
-            </div>
-          </div>
+          {/* Enviar avaliação — sempre abaixo da lista, no PC e no mobile */}
+          <ReviewSubmitForm />
         </div>
       </Container>
     </div>
