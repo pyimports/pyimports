@@ -221,9 +221,30 @@ export interface CreateManualReviewInput {
   recommends: boolean;
   purchaseDate: string;
   deliveryDate: string;
+  publishedAt: string;
   description: string;
   productName?: string;
   images: string[]; // URLs já enviadas via /api/reviews/upload-image
+}
+
+function validateManualReviewInput(input: CreateManualReviewInput): string | null {
+  if (!input.orderNumber.trim()) return "Informe o número do pedido.";
+  if (!input.customerName.trim()) return "Informe o nome do cliente.";
+  if (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 5) return "Nota inválida.";
+  if (typeof input.recommends !== "boolean") return "Informe se o cliente recomenda.";
+  if (!input.purchaseDate.trim() || Number.isNaN(new Date(input.purchaseDate).getTime())) {
+    return "Data de compra inválida.";
+  }
+  if (!input.deliveryDate.trim() || Number.isNaN(new Date(input.deliveryDate).getTime())) {
+    return "Data de entrega inválida.";
+  }
+  if (!input.publishedAt.trim() || Number.isNaN(new Date(input.publishedAt).getTime())) {
+    return "Data de publicação inválida.";
+  }
+  if (!input.description.trim()) return "Descrição obrigatória.";
+  if (input.description.length > 1500) return "Descrição muito longa (máximo 1500 caracteres).";
+  if (input.images.length > 4) return "Máximo de 4 imagens.";
+  return null;
 }
 
 // Avaliação 100% manual, criada direto pelo admin — sem vínculo com um
@@ -235,25 +256,8 @@ export async function createManualCustomerReview(
   const guard = await requireAdminWrite();
   if ("error" in guard) return guard;
 
-  if (!input.orderNumber.trim()) return { error: "Informe o número do pedido." };
-  if (!input.customerName.trim()) return { error: "Informe o nome do cliente." };
-  if (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 5) {
-    return { error: "Nota inválida." };
-  }
-  if (typeof input.recommends !== "boolean") {
-    return { error: "Informe se o cliente recomenda." };
-  }
-  if (!input.purchaseDate.trim() || Number.isNaN(new Date(input.purchaseDate).getTime())) {
-    return { error: "Data de compra inválida." };
-  }
-  if (!input.deliveryDate.trim() || Number.isNaN(new Date(input.deliveryDate).getTime())) {
-    return { error: "Data de entrega inválida." };
-  }
-  if (!input.description.trim()) return { error: "Descrição obrigatória." };
-  if (input.description.length > 1500) {
-    return { error: "Descrição muito longa (máximo 1500 caracteres)." };
-  }
-  if (input.images.length > 4) return { error: "Máximo de 4 imagens." };
+  const validationError = validateManualReviewInput(input);
+  if (validationError) return { error: validationError };
 
   const service = createServiceClient();
   const products: CustomerReviewProduct[] = input.productName?.trim()
@@ -274,8 +278,60 @@ export async function createManualCustomerReview(
     images: input.images,
     status: "approved",
     reviewed_at: new Date().toISOString(),
+    created_at: new Date(input.publishedAt).toISOString(),
     is_manual: true,
   });
+
+  if (error) return { error: error.message };
+
+  revalidatePath(routes.admin.avaliacoes);
+  revalidatePath(routes.avaliacoes);
+  return { success: true };
+}
+
+// Edição de uma avaliação manual já existente — só é permitida se a
+// avaliação foi criada como manual (is_manual=true); nunca deixa reescrever
+// os dados de uma avaliação real enviada por um cliente.
+export async function updateManualCustomerReview(
+  id: string,
+  input: CreateManualReviewInput
+): Promise<{ error: string } | { success: true }> {
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
+
+  const validationError = validateManualReviewInput(input);
+  if (validationError) return { error: validationError };
+
+  const service = createServiceClient();
+
+  const { data: existing } = await service
+    .from("customer_reviews")
+    .select("is_manual")
+    .eq("id", id)
+    .single();
+
+  if (!existing) return { error: "Avaliação não encontrada." };
+  if (!existing.is_manual) return { error: "Só é possível editar avaliações criadas manualmente." };
+
+  const products: CustomerReviewProduct[] = input.productName?.trim()
+    ? [{ name: input.productName.trim(), quantity: 1 }]
+    : [];
+
+  const { error } = await service
+    .from("customer_reviews")
+    .update({
+      customer_name: input.customerName.trim(),
+      order_number: input.orderNumber.trim(),
+      rating: input.rating,
+      recommends: input.recommends,
+      purchase_date: new Date(input.purchaseDate).toISOString(),
+      delivery_date: input.deliveryDate,
+      description: input.description.trim(),
+      products: products as unknown as Json,
+      images: input.images,
+      created_at: new Date(input.publishedAt).toISOString(),
+    })
+    .eq("id", id);
 
   if (error) return { error: error.message };
 

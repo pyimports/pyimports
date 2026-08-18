@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState, useTransition } from "react";
 import Image from "next/image";
-import { Star, Check, X, Trash2, Package, Plus } from "lucide-react";
+import { Star, Check, X, Trash2, Package, Plus, Pencil } from "lucide-react";
 import { Badge } from "@/components/common/Badge";
 import { Button } from "@/components/common/Button";
 import { formatDateShort } from "@/lib/formatters";
@@ -44,7 +44,9 @@ export function AvaliacoesAdminClient({ initialReviews }: Props) {
   const [tab, setTab] = useState<CustomerReviewStatus>("pending");
   const [, startTransition] = useTransition();
   const [lightbox, setLightbox] = useState<string | null>(null);
-  const [manualModalOpen, setManualModalOpen] = useState(false);
+  const [modalState, setModalState] = useState<
+    { mode: "create" } | { mode: "edit"; review: AdminCustomerReview } | null
+  >(null);
 
   useEffect(() => {
     if (!lightbox) return;
@@ -98,7 +100,7 @@ export function AvaliacoesAdminClient({ initialReviews }: Props) {
             publicamente em &quot;Avaliações&quot;.
           </p>
         </div>
-        <Button variant="accent" leftIcon={<Plus size={16} />} onClick={() => setManualModalOpen(true)}>
+        <Button variant="accent" leftIcon={<Plus size={16} />} onClick={() => setModalState({ mode: "create" })}>
           Nova avaliação manual
         </Button>
       </div>
@@ -192,6 +194,14 @@ export function AvaliacoesAdminClient({ initialReviews }: Props) {
                   <X size={14} /> Rejeitar
                 </button>
               )}
+              {r.is_manual && (
+                <button
+                  onClick={() => setModalState({ mode: "edit", review: r })}
+                  className="flex items-center gap-1.5 text-xs font-medium text-accent hover:text-accent-light transition-colors"
+                >
+                  <Pencil size={14} /> Editar
+                </button>
+              )}
               <button
                 onClick={() => handleDelete(r.id, r.customer_name)}
                 className="flex items-center gap-1.5 text-xs font-medium text-danger hover:text-danger/80 transition-colors ml-auto"
@@ -214,15 +224,17 @@ export function AvaliacoesAdminClient({ initialReviews }: Props) {
         </div>
       )}
 
-      {manualModalOpen && (
+      {modalState && (
         <ManualReviewModal
-          onClose={() => setManualModalOpen(false)}
-          onCreated={() => {
-            setManualModalOpen(false);
+          review={modalState.mode === "edit" ? modalState.review : undefined}
+          onClose={() => setModalState(null)}
+          onSaved={() => {
+            const wasCreate = modalState.mode === "create";
+            setModalState(null);
             startTransition(async () => {
               const fresh = await listCustomerReviewsAdmin();
               setReviews(fresh);
-              setTab("approved");
+              if (wasCreate) setTab("approved");
             });
           }}
         />

@@ -1,32 +1,48 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 import { Star, X, ImagePlus, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Modal } from "@/components/common/Modal";
 import { Input, Textarea } from "@/components/common/Input";
 import { Button } from "@/components/common/Button";
-import { createManualCustomerReview } from "@/lib/actions/customer-reviews";
+import {
+  createManualCustomerReview,
+  updateManualCustomerReview,
+  type AdminCustomerReview,
+} from "@/lib/actions/customer-reviews";
 
 interface Props {
+  review?: AdminCustomerReview; // presente = modo edição
   onClose: () => void;
-  onCreated: () => void;
+  onSaved: () => void;
 }
 
 const MAX_IMAGES = 4;
 
-export function ManualReviewModal({ onClose, onCreated }: Props) {
-  const [orderNumber, setOrderNumber] = useState("");
-  const [customerName, setCustomerName] = useState("");
-  const [productName, setProductName] = useState("");
-  const [rating, setRating] = useState(0);
+const toDateInput = (iso: string) => iso.slice(0, 10);
+
+export function ManualReviewModal({ review, onClose, onSaved }: Props) {
+  const isEditing = !!review;
+
+  const [orderNumber, setOrderNumber] = useState(review?.order_number ?? "");
+  const [customerName, setCustomerName] = useState(review?.customer_name ?? "");
+  const [productName, setProductName] = useState(review?.products[0]?.name ?? "");
+  const [rating, setRating] = useState(review?.rating ?? 0);
   const [hoverRating, setHoverRating] = useState(0);
-  const [recommends, setRecommends] = useState<boolean | null>(null);
-  const [purchaseDate, setPurchaseDate] = useState("");
-  const [deliveryDate, setDeliveryDate] = useState("");
-  const [description, setDescription] = useState("");
-  const [images, setImages] = useState<File[]>([]);
+  const [recommends, setRecommends] = useState<boolean | null>(review?.recommends ?? null);
+  const [purchaseDate, setPurchaseDate] = useState(review ? toDateInput(review.purchase_date) : "");
+  const [deliveryDate, setDeliveryDate] = useState(review ? toDateInput(review.delivery_date) : "");
+  const [publishedAt, setPublishedAt] = useState(
+    review ? toDateInput(review.created_at) : new Date().toISOString().slice(0, 10)
+  );
+  const [description, setDescription] = useState(review?.description ?? "");
+  const [existingImages, setExistingImages] = useState<string[]>(review?.images ?? []);
+  const [newImages, setNewImages] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  const totalImages = existingImages.length + newImages.length;
 
   const isValid =
     orderNumber.trim() &&
@@ -35,15 +51,20 @@ export function ManualReviewModal({ onClose, onCreated }: Props) {
     recommends !== null &&
     purchaseDate &&
     deliveryDate &&
+    publishedAt &&
     description.trim().length > 0;
 
   const handleAddImages = (files: FileList | null) => {
     if (!files) return;
-    setImages((prev) => [...prev, ...Array.from(files)].slice(0, MAX_IMAGES));
+    setNewImages((prev) => [...prev, ...Array.from(files)].slice(0, MAX_IMAGES - existingImages.length));
   };
 
-  const handleRemoveImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
+  const handleRemoveExistingImage = (index: number) => {
+    setExistingImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleRemoveNewImage = (index: number) => {
+    setNewImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
@@ -52,17 +73,17 @@ export function ManualReviewModal({ onClose, onCreated }: Props) {
     setSubmitting(true);
 
     try {
-      const imageUrls: string[] = [];
-      for (const file of images) {
+      const uploadedUrls: string[] = [];
+      for (const file of newImages) {
         const formData = new FormData();
         formData.append("file", file);
         const res = await fetch("/api/reviews/upload-image", { method: "POST", body: formData });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Falha ao enviar imagem.");
-        imageUrls.push(data.url);
+        uploadedUrls.push(data.url);
       }
 
-      const result = await createManualCustomerReview({
+      const payload = {
         orderNumber,
         customerName,
         productName: productName || undefined,
@@ -70,9 +91,14 @@ export function ManualReviewModal({ onClose, onCreated }: Props) {
         recommends: recommends as boolean,
         purchaseDate,
         deliveryDate,
+        publishedAt,
         description,
-        images: imageUrls,
-      });
+        images: [...existingImages, ...uploadedUrls],
+      };
+
+      const result = isEditing
+        ? await updateManualCustomerReview(review.id, payload)
+        : await createManualCustomerReview(payload);
 
       if ("error" in result) {
         setError(result.error);
@@ -80,19 +106,20 @@ export function ManualReviewModal({ onClose, onCreated }: Props) {
         return;
       }
 
-      onCreated();
+      onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível criar a avaliação.");
+      setError(err instanceof Error ? err.message : "Não foi possível salvar a avaliação.");
       setSubmitting(false);
     }
   };
 
   return (
-    <Modal isOpen title="Nova avaliação manual" onClose={onClose} size="xl">
+    <Modal isOpen title={isEditing ? "Editar avaliação manual" : "Nova avaliação manual"} onClose={onClose} size="xl">
       <div className="space-y-4">
         <p className="text-xs text-muted">
-          Cria uma avaliação sem vínculo com nenhum pedido do sistema — 100% preenchida por você. Entra
-          já aprovada, direto na página pública.
+          {isEditing
+            ? "Edita uma avaliação manual — sem vínculo com nenhum pedido do sistema."
+            : "Cria uma avaliação sem vínculo com nenhum pedido do sistema — 100% preenchida por você. Entra já aprovada, direto na página pública."}
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -119,7 +146,7 @@ export function ManualReviewModal({ onClose, onCreated }: Props) {
           placeholder="Ex.: Tirzepatida 30mg (opcional)"
         />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Input
             label="Data da compra"
             type="date"
@@ -135,6 +162,14 @@ export function ManualReviewModal({ onClose, onCreated }: Props) {
             value={deliveryDate}
             max={new Date().toISOString().slice(0, 10)}
             onChange={(e) => setDeliveryDate(e.target.value)}
+          />
+          <Input
+            label="Data de publicação"
+            type="date"
+            required
+            value={publishedAt}
+            onChange={(e) => setPublishedAt(e.target.value)}
+            helper="Data que aparece no card da avaliação"
           />
         </div>
 
@@ -208,19 +243,30 @@ export function ManualReviewModal({ onClose, onCreated }: Props) {
             Fotos (opcional, até {MAX_IMAGES})
           </label>
           <div className="flex items-center gap-2 flex-wrap">
-            {images.map((file, i) => (
-              <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-dark-border">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
+            {existingImages.map((url, i) => (
+              <div key={url} className="relative w-16 h-16 rounded-lg overflow-hidden border border-dark-border">
+                <Image src={url} alt="" fill className="object-cover" unoptimized />
                 <button
-                  onClick={() => handleRemoveImage(i)}
+                  onClick={() => handleRemoveExistingImage(i)}
                   className="absolute top-0.5 right-0.5 w-4 h-4 bg-black/70 rounded-full flex items-center justify-center"
                 >
                   <X size={10} className="text-white" />
                 </button>
               </div>
             ))}
-            {images.length < MAX_IMAGES && (
+            {newImages.map((file, i) => (
+              <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-dark-border">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
+                <button
+                  onClick={() => handleRemoveNewImage(i)}
+                  className="absolute top-0.5 right-0.5 w-4 h-4 bg-black/70 rounded-full flex items-center justify-center"
+                >
+                  <X size={10} className="text-white" />
+                </button>
+              </div>
+            ))}
+            {totalImages < MAX_IMAGES && (
               <label className="w-16 h-16 rounded-lg border border-dashed border-dark-border-light flex items-center justify-center cursor-pointer hover:border-accent/50 transition-colors">
                 <ImagePlus size={18} className="text-muted" />
                 <input
@@ -242,7 +288,7 @@ export function ManualReviewModal({ onClose, onCreated }: Props) {
             Cancelar
           </Button>
           <Button variant="accent" isLoading={submitting} disabled={!isValid} onClick={handleSubmit}>
-            Criar avaliação
+            {isEditing ? "Salvar alterações" : "Criar avaliação"}
           </Button>
         </div>
       </div>
