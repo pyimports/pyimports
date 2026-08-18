@@ -1227,7 +1227,7 @@ export type Database = {
           customer_name:  string;
           order_number:   string;
           rating:         number;
-          service_rating: string;
+          recommends:     boolean;
           purchase_date:  string;
           delivery_date:  string;
           description:    string;
@@ -1244,7 +1244,7 @@ export type Database = {
           customer_name:   string;
           order_number:    string;
           rating:          number;
-          service_rating:  string;
+          recommends:      boolean;
           purchase_date:   string;
           delivery_date:   string;
           description:     string;

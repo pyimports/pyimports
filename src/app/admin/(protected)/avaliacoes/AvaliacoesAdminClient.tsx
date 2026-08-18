@@ -11,7 +11,7 @@ import {
   deleteCustomerReview,
   type AdminCustomerReview,
 } from "@/lib/actions/customer-reviews";
-import type { CustomerReviewStatus, ServiceRating } from "@/types";
+import type { CustomerReviewStatus } from "@/types";
 
 interface Props {
   initialReviews: AdminCustomerReview[];
@@ -35,19 +35,6 @@ const STATUS_LABEL: Record<CustomerReviewStatus, string> = {
   rejected: "Rejeitada",
 };
 
-const SERVICE_RATING_LABEL: Record<ServiceRating, string> = {
-  pessimo: "Péssimo",
-  ruim: "Ruim",
-  bom: "Bom",
-  excelente: "Excelente",
-};
-
-const SERVICE_RATING_BADGE: Record<ServiceRating, "danger" | "warning" | "info" | "success"> = {
-  pessimo: "danger",
-  ruim: "warning",
-  bom: "info",
-  excelente: "success",
-};
 
 export function AvaliacoesAdminClient({ initialReviews }: Props) {
   const [reviews, setReviews] = useState(initialReviews);
@@ -129,11 +116,11 @@ export function AvaliacoesAdminClient({ initialReviews }: Props) {
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-semibold text-dark-text">{r.customer_name}</span>
                   <Badge label={STATUS_LABEL[r.status]} variant={STATUS_BADGE[r.status]} size="sm" />
-                  <Badge
-                    label={SERVICE_RATING_LABEL[r.service_rating]}
-                    variant={SERVICE_RATING_BADGE[r.service_rating]}
-                    size="sm"
-                  />
+                  {r.recommends ? (
+                    <Badge label="Recomenda" variant="success" size="sm" />
+                  ) : (
+                    <Badge label="Não recomenda" variant="danger" size="sm" />
+                  )}
                 </div>
                 <p className="text-xs text-muted mt-1">
                   Pedido #{r.order_number} · CPF {r.customer_cpf} · comprou em {formatDateShort(r.purchase_date)} ·

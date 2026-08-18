@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { CustomerReview, CustomerReviewProduct, ServiceRating } from "@/types";
+import type { CustomerReview, CustomerReviewProduct } from "@/types";
 import type { DbCustomerReview } from "@/types/database.types";
 
 export interface CustomerReviewsSummary {
@@ -17,7 +17,7 @@ function toCustomerReview(row: DbCustomerReview): CustomerReview {
     order_number: row.order_number,
     customer_name: row.customer_name,
     rating: row.rating,
-    service_rating: row.service_rating as ServiceRating,
+    recommends: row.recommends,
     purchase_date: row.purchase_date,
     delivery_date: row.delivery_date,
     description: row.description,

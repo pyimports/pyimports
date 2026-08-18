@@ -1,29 +1,14 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import { Star, Package } from "lucide-react";
 import { Container } from "@/components/common/SectionHeader";
 import { Badge } from "@/components/common/Badge";
 import { ReviewSubmitForm } from "@/components/public/ReviewSubmitForm";
+import { ReviewCardImages } from "@/components/public/ReviewCardImages";
 import { getApprovedCustomerReviews } from "@/lib/db/customer-reviews";
 import { formatDateShort } from "@/lib/formatters";
 import { maskNameDisplay } from "@/lib/mask";
-import type { ServiceRating } from "@/types";
 
 export const metadata: Metadata = { title: "Avaliações" };
-
-const SERVICE_RATING_LABEL: Record<ServiceRating, string> = {
-  pessimo: "Péssimo",
-  ruim: "Ruim",
-  bom: "Bom",
-  excelente: "Excelente",
-};
-
-const SERVICE_RATING_BADGE: Record<ServiceRating, "danger" | "warning" | "info" | "success"> = {
-  pessimo: "danger",
-  ruim: "warning",
-  bom: "info",
-  excelente: "success",
-};
 
 export default async function AvaliacoesPage() {
   const { reviews, averageRating, totalCount, starCounts } = await getApprovedCustomerReviews();
@@ -106,28 +91,25 @@ export default async function AvaliacoesPage() {
                     </div>
                   </div>
 
-                  <Badge
-                    label={`Atendimento: ${SERVICE_RATING_LABEL[review.service_rating]}`}
-                    variant={SERVICE_RATING_BADGE[review.service_rating]}
-                    size="sm"
-                  />
+                  {review.recommends ? (
+                    <Badge label="Recomenda" variant="success" size="sm" />
+                  ) : (
+                    <Badge label="Não recomenda" variant="danger" size="sm" />
+                  )}
 
                   <div className="flex items-start gap-2 text-xs text-muted">
                     <Package size={13} className="flex-shrink-0 mt-0.5" />
                     <span>{review.products.map((p) => `${p.name} (x${p.quantity})`).join(", ")}</span>
                   </div>
 
+                  <p className="text-xs text-muted">
+                    Comprou em {formatDateShort(review.purchase_date)} · Chegou em{" "}
+                    {formatDateShort(review.delivery_date)}
+                  </p>
+
                   <p className="text-sm text-dark-text leading-relaxed">{review.description}</p>
 
-                  {review.images.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      {review.images.map((url) => (
-                        <div key={url} className="relative w-16 h-16 rounded-lg overflow-hidden border border-dark-border">
-                          <Image src={url} alt="Foto da avaliação" fill className="object-cover" unoptimized />
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <ReviewCardImages images={review.images} />
                 </div>
               ))}
             </div>

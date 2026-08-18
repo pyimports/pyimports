@@ -1,25 +1,16 @@
 "use client";
 
 import React, { useState } from "react";
-import { Star, Search, Package, X, ImagePlus, CheckCircle2 } from "lucide-react";
+import { Star, Search, Package, X, ImagePlus, CheckCircle2, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Input, Textarea } from "@/components/common/Input";
-import { Select } from "@/components/common/Select";
 import { Button } from "@/components/common/Button";
 import { maskCpf } from "@/lib/utils";
 import { formatDateShort } from "@/lib/formatters";
 import { lookupReviewableOrders, submitCustomerReview, type ReviewableOrder } from "@/lib/actions/customer-reviews";
-import type { ServiceRating } from "@/types";
 
 type Step = "cpf" | "orders" | "form" | "success";
 
-const SERVICE_RATING_OPTIONS: { value: ServiceRating; label: string }[] = [
-  { value: "excelente", label: "Excelente" },
-  { value: "bom", label: "Bom" },
-  { value: "ruim", label: "Ruim" },
-  { value: "pessimo", label: "Péssimo" },
-];
-
-const MAX_IMAGES = 3;
+const MAX_IMAGES = 4;
 
 export function ReviewSubmitForm() {
   const [step, setStep] = useState<Step>("cpf");
@@ -33,7 +24,7 @@ export function ReviewSubmitForm() {
 
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
-  const [serviceRating, setServiceRating] = useState<ServiceRating | "">("");
+  const [recommends, setRecommends] = useState<boolean | null>(null);
   const [deliveryDate, setDeliveryDate] = useState("");
   const [description, setDescription] = useState("");
   const [images, setImages] = useState<File[]>([]);
@@ -70,7 +61,7 @@ export function ReviewSubmitForm() {
   };
 
   const isFormValid =
-    rating > 0 && !!serviceRating && !!deliveryDate && description.trim().length >= 5;
+    rating > 0 && recommends !== null && !!deliveryDate && description.trim().length >= 5;
 
   const handleSubmit = async () => {
     if (!selectedOrder || !isFormValid) return;
@@ -92,7 +83,7 @@ export function ReviewSubmitForm() {
         cpf,
         orderId: selectedOrder.order_id,
         rating,
-        serviceRating: serviceRating as ServiceRating,
+        recommends: recommends as boolean,
         deliveryDate,
         description,
         images: imageUrls,
@@ -218,13 +209,37 @@ export function ReviewSubmitForm() {
             </div>
           </div>
 
-          <Select
-            label="Como foi nosso atendimento?"
-            required
-            options={SERVICE_RATING_OPTIONS}
-            value={serviceRating}
-            onChange={(v) => setServiceRating(v as ServiceRating)}
-          />
+          <div>
+            <label className="block text-sm font-medium text-dark-text mb-1.5">
+              Você recomenda a gente? <span className="text-danger">*</span>
+            </label>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setRecommends(true)}
+                className={[
+                  "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-all",
+                  recommends === true
+                    ? "border-success bg-success/10 text-success"
+                    : "border-dark-border-light text-muted hover:border-success/40",
+                ].join(" ")}
+              >
+                <ThumbsUp size={15} /> Sim
+              </button>
+              <button
+                type="button"
+                onClick={() => setRecommends(false)}
+                className={[
+                  "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-all",
+                  recommends === false
+                    ? "border-danger bg-danger/10 text-danger"
+                    : "border-dark-border-light text-muted hover:border-danger/40",
+                ].join(" ")}
+              >
+                <ThumbsDown size={15} /> Não
+              </button>
+            </div>
+          </div>
 
           <Input
             label="Data de entrega"

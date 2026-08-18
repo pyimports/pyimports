@@ -381,7 +381,6 @@ export interface Review {
 // =============================================
 
 export type CustomerReviewStatus = "pending" | "approved" | "rejected";
-export type ServiceRating = "pessimo" | "ruim" | "bom" | "excelente";
 
 export interface CustomerReviewProduct {
   name: string;
@@ -394,7 +393,7 @@ export interface CustomerReview {
   order_number: string;
   customer_name: string;
   rating: number; // 1-5
-  service_rating: ServiceRating;
+  recommends: boolean;
   purchase_date: string;
   delivery_date: string;
   description: string;

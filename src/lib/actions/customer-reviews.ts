@@ -6,7 +6,7 @@ import { checkAndRecordLookupAttempt } from "@/lib/order-lookup-rate-limit";
 import { digitsOnly, isValidCpf } from "@/lib/cpf";
 import { requireAdmin, requireAdminWrite } from "@/lib/auth/admin-guard";
 import { routes } from "@/lib/routes";
-import type { CustomerReview, CustomerReviewProduct, ServiceRating } from "@/types";
+import type { CustomerReview, CustomerReviewProduct } from "@/types";
 import type { DbCustomerReview, Json } from "@/types/database.types";
 
 // ---------------------------------------------------------------------------
@@ -19,7 +19,6 @@ const NOT_FOUND_MESSAGE =
   "Não encontramos pedidos com esse CPF. Confira o número ou fale com nosso atendimento.";
 const NO_ELIGIBLE_ORDERS_MESSAGE = "Todos os seus pedidos já foram avaliados. Obrigado!";
 const RATE_LIMIT_MESSAGE = "Muitas tentativas de busca. Aguarde alguns minutos e tente novamente.";
-const SERVICE_RATINGS: ServiceRating[] = ["pessimo", "ruim", "bom", "excelente"];
 
 export interface ReviewableOrder {
   order_id: string;
@@ -89,7 +88,7 @@ export interface SubmitCustomerReviewInput {
   cpf: string;
   orderId: string;
   rating: number;
-  serviceRating: ServiceRating;
+  recommends: boolean;
   deliveryDate: string;
   description: string;
   images: string[]; // URLs já enviadas via /api/reviews/upload-image
@@ -104,8 +103,8 @@ export async function submitCustomerReview(
   if (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 5) {
     return { error: "Nota inválida." };
   }
-  if (!SERVICE_RATINGS.includes(input.serviceRating)) {
-    return { error: "Avaliação de atendimento inválida." };
+  if (typeof input.recommends !== "boolean") {
+    return { error: "Informe se você recomenda a gente." };
   }
   if (!input.deliveryDate.trim() || Number.isNaN(new Date(input.deliveryDate).getTime())) {
     return { error: "Data de entrega inválida." };
@@ -119,8 +118,8 @@ export async function submitCustomerReview(
   if (input.description.length > 1500) {
     return { error: "Descrição muito longa (máximo 1500 caracteres)." };
   }
-  if (input.images.length > 3) {
-    return { error: "Máximo de 3 imagens." };
+  if (input.images.length > 4) {
+    return { error: "Máximo de 4 imagens." };
   }
 
   const service = createServiceClient();
@@ -167,7 +166,7 @@ export async function submitCustomerReview(
     customer_name: order.customer_name,
     order_number: order.order_number,
     rating: input.rating,
-    service_rating: input.serviceRating,
+    recommends: input.recommends,
     purchase_date: order.payment_confirmed_at ?? order.created_at,
     delivery_date: input.deliveryDate,
     description: input.description.trim(),
@@ -201,7 +200,7 @@ function toAdminCustomerReview(row: DbCustomerReview): AdminCustomerReview {
     customer_name: row.customer_name,
     customer_cpf: row.customer_cpf,
     rating: row.rating,
-    service_rating: row.service_rating as ServiceRating,
+    recommends: row.recommends,
     purchase_date: row.purchase_date,
     delivery_date: row.delivery_date,
     description: row.description,
