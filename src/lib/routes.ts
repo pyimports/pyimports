@@ -8,6 +8,7 @@ export const routes = {
   pagamento: (orderId: string) => `/pagamento/${orderId}`,
   pedidoConfirmado: (orderId: string) => `/pedido-confirmado/${orderId}`,
   acompanharPedido: "/acompanhar-pedido",
+  atendimento: "/atendimento",
 
   admin: {
     login: "/admin/login",

@@ -7,7 +7,6 @@ import { usePathname } from "next/navigation";
 import { ShoppingCart, Menu, X, ChevronRight } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { routes } from "@/lib/routes";
-import { generateStoreWhatsAppLink } from "@/lib/whatsapp";
 import { AnnouncementBell } from "@/components/layout/AnnouncementBell";
 import type { Category, Announcement } from "@/types";
 
@@ -38,7 +37,7 @@ export const PublicNavbar = ({ categories, announcements = [], whatsappNumber, w
       external: false,
     })),
     { label: "Acompanhar Pedido", href: routes.acompanharPedido, external: false },
-    { label: "Atendimento", href: generateStoreWhatsAppLink(whatsappNumber, whatsappMessage), external: true },
+    { label: "Atendimento", href: routes.atendimento, external: false },
   ];
 
   useEffect(() => {
