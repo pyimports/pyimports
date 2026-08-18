@@ -570,7 +570,7 @@ export type Database = {
           shipping_complement:   string | null;
           shipping_neighborhood: string;
           shipping_city:         string;
-          shipping_state:        string;
+          shipping_state:        string | null;
           shipping_zip_code:     string;
           subtotal:              number;
           coupon_code:           string | null;
@@ -610,7 +610,7 @@ export type Database = {
           shipping_complement?:   string | null;
           shipping_neighborhood:  string;
           shipping_city:          string;
-          shipping_state:         string;
+          shipping_state?:        string | null;
           shipping_zip_code:      string;
           subtotal:               number;
           coupon_code?:           string | null;

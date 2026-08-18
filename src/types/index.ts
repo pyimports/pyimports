@@ -483,7 +483,7 @@ export interface Order {
   shipping_complement?: string;
   shipping_neighborhood: string;
   shipping_city: string;
-  shipping_state: string;
+  shipping_state: string | null;
   shipping_zip_code: string;
 
   // Financeiro
