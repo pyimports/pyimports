@@ -196,6 +196,18 @@ export interface ValidateCouponResult {
   description: string;
 }
 
+// Só existe pra decidir se o campo "Cupom de desconto" aparece no carrinho —
+// sem isso, a caixa fica vazia poluindo a tela de quem não tem nenhum cupom
+// pra usar. Não valida nada, só checa se existe pelo menos um is_active=true.
+export async function hasActiveCoupon(): Promise<boolean> {
+  const service = createServiceClient();
+  const { count } = await service
+    .from("coupons")
+    .select("id", { count: "exact", head: true })
+    .eq("is_active", true);
+  return (count ?? 0) > 0;
+}
+
 export async function validateCouponPublic(
   code: string,
   subtotal: number,

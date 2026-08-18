@@ -12,7 +12,11 @@ import { formatCurrency } from "@/lib/formatters";
 import { useCartStore } from "@/store/cart-store";
 import { routes } from "@/lib/routes";
 
-export const CartSummary = () => {
+interface CartSummaryProps {
+  showCoupon: boolean;
+}
+
+export const CartSummary = ({ showCoupon }: CartSummaryProps) => {
   // Aguarda a hidratação do Zustand persist antes de renderizar o conteúdo.
   // Sem isso, o servidor renderiza com store vazio (items: []) enquanto o
   // cliente tem dados do localStorage — mismatch que causava re-render em
@@ -38,6 +42,8 @@ export const CartSummary = () => {
       </div>
     );
   }
+
+  const couponVisible = showCoupon || !!coupon_code;
 
   if (items.length === 0) {
     return (
@@ -86,11 +92,17 @@ export const CartSummary = () => {
           ))}
         </div>
 
-        {/* Coupon + Shipping */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-dark-surface rounded-2xl border border-dark-border p-4">
-            <CouponInput />
-          </div>
+        {/* Coupon + Shipping — a caixa de cupom só aparece se existir algum
+            cupom ativo (showCoupon, calculado no server) OU se o cliente já
+            estiver com um aplicado (mesmo que tenha sido desativado depois,
+            ele continua podendo ver/remover). Sem isso, some, pra não
+            poluir a tela de quem não tem nenhum cupom pra usar. */}
+        <div className={couponVisible ? "grid grid-cols-1 md:grid-cols-2 gap-4" : ""}>
+          {couponVisible && (
+            <div className="bg-dark-surface rounded-2xl border border-dark-border p-4">
+              <CouponInput />
+            </div>
+          )}
           <div className="bg-dark-surface rounded-2xl border border-dark-border p-4">
             <ShippingNotice />
           </div>
