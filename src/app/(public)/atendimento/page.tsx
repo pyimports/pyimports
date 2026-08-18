@@ -97,6 +97,19 @@ export default async function AtendimentoPage() {
             </p>
           </FaqItem>
 
+          <FaqItem question="Como acionar o meu seguro?">
+            <p>
+              Antes de abrir o pacote, grave um vídeo completo, em 360°, mostrando o pacote{" "}
+              <strong className="text-dark-text">totalmente lacrado</strong>, a etiqueta com seu
+              nome e endereço, e depois a abertura completa do pacote até o fim, sem cortes. Não
+              precisa aparecer seu rosto, só o pacote sendo aberto.
+            </p>
+            <p>
+              Se o pacote for extraviado ou apreendido, é só nos mostrar isso pelo WhatsApp que a
+              gente já reenvia outro.
+            </p>
+          </FaqItem>
+
           <FaqItem question="Tenho prazo pra confirmar o recebimento da etiqueta?">
             <p>
               Sim, 30 minutos depois de emitirmos a etiqueta de envio. Se não conseguir confirmar
