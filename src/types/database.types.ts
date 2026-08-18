@@ -1222,8 +1222,8 @@ export type Database = {
       customer_reviews: {
         Row: {
           id:             string;
-          order_id:       string;
-          customer_cpf:   string;
+          order_id:       string | null;
+          customer_cpf:   string | null;
           customer_name:  string;
           order_number:   string;
           rating:         number;
@@ -1234,13 +1234,14 @@ export type Database = {
           products:       Json;
           images:         string[];
           status:         string;
+          is_manual:      boolean;
           reviewed_at:    string | null;
           created_at:     string;
         };
         Insert: {
           id?:             string;
-          order_id:        string;
-          customer_cpf:    string;
+          order_id?:       string | null;
+          customer_cpf?:   string | null;
           customer_name:   string;
           order_number:    string;
           rating:          number;
@@ -1251,6 +1252,7 @@ export type Database = {
           products?:       Json;
           images?:         string[];
           status?:         string;
+          is_manual?:      boolean;
           reviewed_at?:    string | null;
           created_at?:     string;
         };

@@ -189,16 +189,18 @@ export async function submitCustomerReview(
 // ---------------------------------------------------------------------------
 
 export interface AdminCustomerReview extends CustomerReview {
-  customer_cpf: string;
+  customer_cpf?: string;
+  is_manual: boolean;
 }
 
 function toAdminCustomerReview(row: DbCustomerReview): AdminCustomerReview {
   return {
     id: row.id,
-    order_id: row.order_id,
+    order_id: row.order_id ?? undefined,
     order_number: row.order_number,
     customer_name: row.customer_name,
-    customer_cpf: row.customer_cpf,
+    customer_cpf: row.customer_cpf ?? undefined,
+    is_manual: row.is_manual,
     rating: row.rating,
     recommends: row.recommends,
     purchase_date: row.purchase_date,
@@ -210,6 +212,76 @@ function toAdminCustomerReview(row: DbCustomerReview): AdminCustomerReview {
     reviewed_at: row.reviewed_at ?? undefined,
     created_at: row.created_at,
   };
+}
+
+export interface CreateManualReviewInput {
+  orderNumber: string;
+  customerName: string;
+  rating: number;
+  recommends: boolean;
+  purchaseDate: string;
+  deliveryDate: string;
+  description: string;
+  productName?: string;
+  images: string[]; // URLs já enviadas via /api/reviews/upload-image
+}
+
+// Avaliação 100% manual, criada direto pelo admin — sem vínculo com um
+// pedido/CPF real. Já entra aprovada (o admin é quem está garantindo a
+// veracidade ao criar), sem passar pela fila de moderação.
+export async function createManualCustomerReview(
+  input: CreateManualReviewInput
+): Promise<{ error: string } | { success: true }> {
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
+
+  if (!input.orderNumber.trim()) return { error: "Informe o número do pedido." };
+  if (!input.customerName.trim()) return { error: "Informe o nome do cliente." };
+  if (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 5) {
+    return { error: "Nota inválida." };
+  }
+  if (typeof input.recommends !== "boolean") {
+    return { error: "Informe se o cliente recomenda." };
+  }
+  if (!input.purchaseDate.trim() || Number.isNaN(new Date(input.purchaseDate).getTime())) {
+    return { error: "Data de compra inválida." };
+  }
+  if (!input.deliveryDate.trim() || Number.isNaN(new Date(input.deliveryDate).getTime())) {
+    return { error: "Data de entrega inválida." };
+  }
+  if (!input.description.trim()) return { error: "Descrição obrigatória." };
+  if (input.description.length > 1500) {
+    return { error: "Descrição muito longa (máximo 1500 caracteres)." };
+  }
+  if (input.images.length > 4) return { error: "Máximo de 4 imagens." };
+
+  const service = createServiceClient();
+  const products: CustomerReviewProduct[] = input.productName?.trim()
+    ? [{ name: input.productName.trim(), quantity: 1 }]
+    : [];
+
+  const { error } = await service.from("customer_reviews").insert({
+    order_id: null,
+    customer_cpf: null,
+    customer_name: input.customerName.trim(),
+    order_number: input.orderNumber.trim(),
+    rating: input.rating,
+    recommends: input.recommends,
+    purchase_date: new Date(input.purchaseDate).toISOString(),
+    delivery_date: input.deliveryDate,
+    description: input.description.trim(),
+    products: products as unknown as Json,
+    images: input.images,
+    status: "approved",
+    reviewed_at: new Date().toISOString(),
+    is_manual: true,
+  });
+
+  if (error) return { error: error.message };
+
+  revalidatePath(routes.admin.avaliacoes);
+  revalidatePath(routes.avaliacoes);
+  return { success: true };
 }
 
 export async function listCustomerReviewsAdmin(): Promise<AdminCustomerReview[]> {

@@ -2,15 +2,18 @@
 
 import React, { useEffect, useMemo, useState, useTransition } from "react";
 import Image from "next/image";
-import { Star, Check, X, Trash2, Package } from "lucide-react";
+import { Star, Check, X, Trash2, Package, Plus } from "lucide-react";
 import { Badge } from "@/components/common/Badge";
+import { Button } from "@/components/common/Button";
 import { formatDateShort } from "@/lib/formatters";
 import {
   approveCustomerReview,
   rejectCustomerReview,
   deleteCustomerReview,
+  listCustomerReviewsAdmin,
   type AdminCustomerReview,
 } from "@/lib/actions/customer-reviews";
+import { ManualReviewModal } from "./ManualReviewModal";
 import type { CustomerReviewStatus } from "@/types";
 
 interface Props {
@@ -41,6 +44,7 @@ export function AvaliacoesAdminClient({ initialReviews }: Props) {
   const [tab, setTab] = useState<CustomerReviewStatus>("pending");
   const [, startTransition] = useTransition();
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [manualModalOpen, setManualModalOpen] = useState(false);
 
   useEffect(() => {
     if (!lightbox) return;
@@ -86,12 +90,17 @@ export function AvaliacoesAdminClient({ initialReviews }: Props) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-dark-text">Avaliações de clientes</h1>
-        <p className="text-sm text-muted mt-1">
-          Avaliações enviadas pelos clientes, vinculadas a pedidos reais — aprove antes de aparecerem
-          publicamente em &quot;Avaliações&quot;.
-        </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-dark-text">Avaliações de clientes</h1>
+          <p className="text-sm text-muted mt-1">
+            Avaliações enviadas pelos clientes, vinculadas a pedidos reais — aprove antes de aparecerem
+            publicamente em &quot;Avaliações&quot;.
+          </p>
+        </div>
+        <Button variant="accent" leftIcon={<Plus size={16} />} onClick={() => setManualModalOpen(true)}>
+          Nova avaliação manual
+        </Button>
       </div>
 
       <div className="flex items-center gap-2 border-b border-dark-border">
@@ -130,10 +139,12 @@ export function AvaliacoesAdminClient({ initialReviews }: Props) {
                   ) : (
                     <Badge label="Não recomenda" variant="danger" size="sm" />
                   )}
+                  {r.is_manual && <Badge label="Manual" variant="gold" size="sm" />}
                 </div>
                 <p className="text-xs text-muted mt-1">
-                  Pedido #{r.order_number} · CPF {r.customer_cpf} · comprou em {formatDateShort(r.purchase_date)} ·
-                  entregue em {formatDateShort(r.delivery_date)}
+                  Pedido #{r.order_number}
+                  {r.customer_cpf && ` · CPF ${r.customer_cpf}`} · comprou em{" "}
+                  {formatDateShort(r.purchase_date)} · entregue em {formatDateShort(r.delivery_date)}
                 </p>
               </div>
               <div className="flex items-center gap-0.5">
@@ -201,6 +212,20 @@ export function AvaliacoesAdminClient({ initialReviews }: Props) {
             <Image src={lightbox} alt="Foto da avaliação" fill className="object-contain" unoptimized />
           </div>
         </div>
+      )}
+
+      {manualModalOpen && (
+        <ManualReviewModal
+          onClose={() => setManualModalOpen(false)}
+          onCreated={() => {
+            setManualModalOpen(false);
+            startTransition(async () => {
+              const fresh = await listCustomerReviewsAdmin();
+              setReviews(fresh);
+              setTab("approved");
+            });
+          }}
+        />
       )}
     </div>
   );

@@ -374,10 +374,12 @@ export interface Review {
 }
 
 // =============================================
-// AVALIAÇÕES DE CLIENTES (customer_reviews) — enviadas pelo próprio cliente,
-// vinculadas a um pedido real (verificado por CPF), com aprovação do admin
-// antes de aparecer publicamente. Diferente de Review (depoimento digitado
-// manualmente pelo admin para a home).
+// AVALIAÇÕES DE CLIENTES (customer_reviews) — em geral enviadas pelo próprio
+// cliente, vinculadas a um pedido real (verificado por CPF), com aprovação
+// do admin antes de aparecer publicamente. Também suporta avaliação 100%
+// manual, criada direto pelo admin, sem vínculo com pedido/CPF (order_id
+// fica null nesse caso — ver AdminCustomerReview.is_manual). Diferente de
+// Review (depoimento digitado manualmente pelo admin para a home).
 // =============================================
 
 export type CustomerReviewStatus = "pending" | "approved" | "rejected";
@@ -389,7 +391,7 @@ export interface CustomerReviewProduct {
 
 export interface CustomerReview {
   id: string;
-  order_id: string;
+  order_id?: string;
   order_number: string;
   customer_name: string;
   rating: number; // 1-5

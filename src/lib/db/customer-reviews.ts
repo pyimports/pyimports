@@ -13,7 +13,7 @@ export interface CustomerReviewsSummary {
 function toCustomerReview(row: DbCustomerReview): CustomerReview {
   return {
     id: row.id,
-    order_id: row.order_id,
+    order_id: row.order_id ?? undefined,
     order_number: row.order_number,
     customer_name: row.customer_name,
     rating: row.rating,
