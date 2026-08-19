@@ -472,13 +472,13 @@ export function PagamentoClient({
                               fgColor="#0f172a"
                               bgColor="#ffffff"
                             />
-                            {/* Badge central preto com a logo PY de fundo
-                                transparente por cima — em vez do quadrado
-                                branco que o excavate da lib deixava. O nível
-                                de correção "H" já tolera esse tanto de área
-                                coberta sem quebrar a leitura. */}
+                            {/* Badge central azul claro com a logo PY de
+                                fundo transparente por cima — em vez do
+                                quadrado branco que o excavate da lib deixava.
+                                O nível de correção "H" já tolera esse tanto
+                                de área coberta sem quebrar a leitura. */}
                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                              <div className="w-16 h-16 rounded-xl bg-black flex items-center justify-center shadow-md">
+                              <div className="w-16 h-16 rounded-xl bg-accent-light flex items-center justify-center shadow-md">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img src="/py-logo-transparent.png" alt="" className="w-11 h-11 object-contain" />
                               </div>
