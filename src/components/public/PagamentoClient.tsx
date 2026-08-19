@@ -107,7 +107,6 @@ export function PagamentoClient({
   const [confirming, setConfirming] = useState(false);
   const [confirmError, setConfirmError] = useState("");
 
-  const hasPix = !!(pixQrUrl || pixCode);
   // Reflete a escolha feita no checkout (?method=pix|card) — se o cliente já
   // escolheu lá, a tela de pagamento abre só naquela opção, sem mostrar a
   // outra (evita confundir quem já decidiu Pix e vê Cartão do lado, e
@@ -115,6 +114,12 @@ export function PagamentoClient({
   // prévia (link antigo, acesso direto à URL).
   const chosenMethod = searchParams.get("method") === "card" ? "card" : searchParams.get("method") === "pix" ? "pix" : null;
   const [activeTab, setActiveTab] = useState<"pix" | "card">(chosenMethod === "card" ? "card" : "pix");
+  // Mostra a seção de pagamento embutido (Pix ou cartão) sempre que já
+  // temos um QR/código Pix pronto OU o cliente escolheu cartão no checkout
+  // — pedido em cartão nunca tem pixCode/pixQrUrl (não criamos mais a
+  // cobrança Pix nesse caso), então sem o "|| chosenMethod === card" a tela
+  // caía direto no fallback de checkout externo em vez do formulário de cartão.
+  const showEmbeddedPayment = !!(pixQrUrl || pixCode) || chosenMethod === "card";
 
   const initialSeconds = expiresAt
     ? Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000))
@@ -425,7 +430,7 @@ export function PagamentoClient({
           </div>
         )}
 
-        {hasPix ? (
+        {showEmbeddedPayment ? (
           <>
             {/* Seletor Pix / Cartão — só aparece se o cliente não escolheu
                 ainda no checkout (link antigo/acesso direto) */}
