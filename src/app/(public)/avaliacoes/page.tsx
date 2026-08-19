@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Star, Package } from "lucide-react";
 import { Container } from "@/components/common/SectionHeader";
 import { Badge } from "@/components/common/Badge";
+import { StarRatingDisplay } from "@/components/common/StarRating";
 import { ReviewSubmitForm } from "@/components/public/ReviewSubmitForm";
 import { ReviewCardImages } from "@/components/public/ReviewCardImages";
 import { getApprovedCustomerReviews } from "@/lib/db/customer-reviews";
@@ -30,15 +31,7 @@ export default async function AvaliacoesPage() {
             <div className="bg-dark-surface rounded-2xl border border-dark-border p-6 flex flex-col sm:flex-row items-center gap-6">
               <div className="text-center flex-shrink-0">
                 <p className="text-4xl font-bold text-dark-text">{averageRating.toFixed(1)}</p>
-                <div className="flex items-center justify-center gap-0.5 mt-1">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <Star
-                      key={n}
-                      size={16}
-                      className={n <= Math.round(averageRating) ? "fill-accent text-accent" : "text-dark-border"}
-                    />
-                  ))}
-                </div>
+                <StarRatingDisplay rating={averageRating} size={16} className="justify-center mt-1" />
                 <p className="text-xs text-muted mt-1">
                   {totalCount} avaliaç{totalCount !== 1 ? "ões" : "ão"}
                 </p>
@@ -78,15 +71,7 @@ export default async function AvaliacoesPage() {
                     </p>
                     <p className="text-xs text-muted mt-0.5">{formatDateShort(review.created_at)}</p>
                   </div>
-                  <div className="flex items-center gap-0.5">
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <Star
-                        key={n}
-                        size={14}
-                        className={n <= review.rating ? "fill-accent text-accent" : "text-dark-border"}
-                      />
-                    ))}
-                  </div>
+                  <StarRatingDisplay rating={review.rating} size={14} />
                 </div>
 
                 {review.recommends ? (

@@ -211,6 +211,18 @@ export async function getProductsForSelect(): Promise<
   return (data ?? []).map((p) => ({ value: p.id, label: `${p.name} (${p.sku})` }));
 }
 
+// Nomes de produtos pra selects que salvam o nome direto como snapshot (sem
+// vínculo por id) — ex.: produtos de uma avaliação manual.
+export async function getProductNameOptions(): Promise<{ value: string; label: string }[]> {
+  const supabase = createServiceClient();
+
+  const { data, error } = await supabase.from("products").select("name").order("name", { ascending: true });
+
+  if (error) throw error;
+
+  return (data ?? []).map((p) => ({ value: p.name, label: p.name }));
+}
+
 // ---------------------------------------------------------------------------
 // Produtos
 // ---------------------------------------------------------------------------

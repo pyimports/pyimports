@@ -2,9 +2,10 @@
 
 import React, { useEffect, useMemo, useState, useTransition } from "react";
 import Image from "next/image";
-import { Star, Check, X, Trash2, Package, Plus, Pencil } from "lucide-react";
+import { Check, X, Trash2, Package, Plus, Pencil } from "lucide-react";
 import { Badge } from "@/components/common/Badge";
 import { Button } from "@/components/common/Button";
+import { StarRatingDisplay } from "@/components/common/StarRating";
 import { formatDateShort } from "@/lib/formatters";
 import {
   approveCustomerReview,
@@ -18,6 +19,7 @@ import type { CustomerReviewStatus } from "@/types";
 
 interface Props {
   initialReviews: AdminCustomerReview[];
+  productOptions: { value: string; label: string }[];
 }
 
 const STATUS_TABS: { value: CustomerReviewStatus; label: string }[] = [
@@ -39,7 +41,7 @@ const STATUS_LABEL: Record<CustomerReviewStatus, string> = {
 };
 
 
-export function AvaliacoesAdminClient({ initialReviews }: Props) {
+export function AvaliacoesAdminClient({ initialReviews, productOptions }: Props) {
   const [reviews, setReviews] = useState(initialReviews);
   const [tab, setTab] = useState<CustomerReviewStatus>("pending");
   const [, startTransition] = useTransition();
@@ -149,11 +151,7 @@ export function AvaliacoesAdminClient({ initialReviews }: Props) {
                   {formatDateShort(r.purchase_date)} · entregue em {formatDateShort(r.delivery_date)}
                 </p>
               </div>
-              <div className="flex items-center gap-0.5">
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <Star key={n} size={16} className={n <= r.rating ? "fill-accent text-accent" : "text-dark-border"} />
-                ))}
-              </div>
+              <StarRatingDisplay rating={r.rating} size={16} />
             </div>
 
             <div className="flex items-start gap-2 text-sm text-muted">
@@ -227,6 +225,7 @@ export function AvaliacoesAdminClient({ initialReviews }: Props) {
       {modalState && (
         <ManualReviewModal
           review={modalState.mode === "edit" ? modalState.review : undefined}
+          productOptions={productOptions}
           onClose={() => setModalState(null)}
           onSaved={() => {
             const wasCreate = modalState.mode === "create";

@@ -6,7 +6,8 @@ export interface CustomerReviewsSummary {
   reviews: CustomerReview[];
   averageRating: number;
   totalCount: number;
-  // Índice 0 = quantidade de avaliações com 1 estrela, ..., índice 4 = 5 estrelas.
+  // Índice 0 = quantidade de avaliações com 1 estrela, ..., índice 4 = 5 estrelas
+  // (nota fracionada, ex. 4.5, é arredondada pro balde mais próximo aqui).
   starCounts: number[];
 }
 
@@ -16,7 +17,7 @@ function toCustomerReview(row: DbCustomerReview): CustomerReview {
     order_id: row.order_id ?? undefined,
     order_number: row.order_number,
     customer_name: row.customer_name,
-    rating: row.rating,
+    rating: Number(row.rating),
     recommends: row.recommends,
     purchase_date: row.purchase_date,
     delivery_date: row.delivery_date,
@@ -44,7 +45,8 @@ export async function getApprovedCustomerReviews(): Promise<CustomerReviewsSumma
 
   const starCounts = [0, 0, 0, 0, 0];
   for (const r of reviews) {
-    if (r.rating >= 1 && r.rating <= 5) starCounts[r.rating - 1]++;
+    const bucket = Math.round(r.rating);
+    if (bucket >= 1 && bucket <= 5) starCounts[bucket - 1]++;
   }
 
   const averageRating =

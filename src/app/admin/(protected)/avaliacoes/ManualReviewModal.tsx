@@ -2,9 +2,10 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { Star, X, ImagePlus, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Star, X, ImagePlus, ThumbsUp, ThumbsDown, Plus } from "lucide-react";
 import { Modal } from "@/components/common/Modal";
 import { Input, Textarea } from "@/components/common/Input";
+import { Select } from "@/components/common/Select";
 import { Button } from "@/components/common/Button";
 import {
   createManualCustomerReview,
@@ -12,25 +13,30 @@ import {
   type AdminCustomerReview,
 } from "@/lib/actions/customer-reviews";
 import { brasiliaDateKey, brasiliaToday } from "@/lib/timezone";
+import type { CustomerReviewProduct } from "@/types";
 
 interface Props {
   review?: AdminCustomerReview; // presente = modo edição
+  productOptions: { value: string; label: string }[];
   onClose: () => void;
   onSaved: () => void;
 }
 
 const MAX_IMAGES = 4;
+const EMPTY_PRODUCT: CustomerReviewProduct = { name: "", quantity: 1 };
 
 // Converte o timestamp salvo (UTC) pra "YYYY-MM-DD" no calendário de
 // Brasília, pra pré-preencher o <input type="date"> com o dia certo.
 const toDateInput = (iso: string) => brasiliaDateKey(iso);
 
-export function ManualReviewModal({ review, onClose, onSaved }: Props) {
+export function ManualReviewModal({ review, productOptions, onClose, onSaved }: Props) {
   const isEditing = !!review;
 
   const [orderNumber, setOrderNumber] = useState(review?.order_number ?? "");
   const [customerName, setCustomerName] = useState(review?.customer_name ?? "");
-  const [productName, setProductName] = useState(review?.products[0]?.name ?? "");
+  const [products, setProducts] = useState<CustomerReviewProduct[]>(
+    review?.products.length ? review.products : [{ ...EMPTY_PRODUCT }]
+  );
   const [rating, setRating] = useState(review?.rating ?? 0);
   const [hoverRating, setHoverRating] = useState(0);
   const [recommends, setRecommends] = useState<boolean | null>(review?.recommends ?? null);
@@ -46,6 +52,7 @@ export function ManualReviewModal({ review, onClose, onSaved }: Props) {
   const [error, setError] = useState("");
 
   const totalImages = existingImages.length + newImages.length;
+  const displayRating = hoverRating || rating;
 
   const isValid =
     orderNumber.trim() &&
@@ -70,6 +77,16 @@ export function ManualReviewModal({ review, onClose, onSaved }: Props) {
     setNewImages((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const updateProduct = (index: number, patch: Partial<CustomerReviewProduct>) => {
+    setProducts((prev) => prev.map((p, i) => (i === index ? { ...p, ...patch } : p)));
+  };
+
+  const addProductRow = () => setProducts((prev) => [...prev, { ...EMPTY_PRODUCT }]);
+
+  const removeProductRow = (index: number) => {
+    setProducts((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev));
+  };
+
   const handleSubmit = async () => {
     if (!isValid) return;
     setError("");
@@ -89,7 +106,7 @@ export function ManualReviewModal({ review, onClose, onSaved }: Props) {
       const payload = {
         orderNumber,
         customerName,
-        productName: productName || undefined,
+        products,
         rating,
         recommends: recommends as boolean,
         purchaseDate,
@@ -142,12 +159,45 @@ export function ManualReviewModal({ review, onClose, onSaved }: Props) {
           />
         </div>
 
-        <Input
-          label="Produto(s) comprado(s)"
-          value={productName}
-          onChange={(e) => setProductName(e.target.value)}
-          placeholder="Ex.: Tirzepatida 30mg (opcional)"
-        />
+        <div>
+          <label className="block text-sm font-medium text-dark-text mb-1.5">Produtos comprados</label>
+          <div className="space-y-2">
+            {products.map((product, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <div className="flex-1">
+                  <Select
+                    options={productOptions}
+                    value={product.name}
+                    onChange={(v) => updateProduct(i, { name: v })}
+                    placeholder="Selecione o produto"
+                  />
+                </div>
+                <input
+                  type="number"
+                  min={1}
+                  value={product.quantity}
+                  onChange={(e) => updateProduct(i, { quantity: Math.max(1, Number(e.target.value) || 1) })}
+                  className="w-20 bg-dark-surface border border-dark-border-light rounded-xl px-3 py-2.5 text-sm text-dark-text outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeProductRow(i)}
+                  disabled={products.length === 1}
+                  className="text-muted hover:text-danger transition-colors disabled:opacity-30 disabled:cursor-not-allowed p-1"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={addProductRow}
+            className="mt-2 flex items-center gap-1.5 text-xs font-medium text-accent hover:text-accent-light transition-colors"
+          >
+            <Plus size={14} /> Adicionar produto
+          </button>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Input
@@ -180,21 +230,41 @@ export function ManualReviewModal({ review, onClose, onSaved }: Props) {
           <label className="block text-sm font-medium text-dark-text mb-1.5">
             Nota <span className="text-danger">*</span>
           </label>
-          <div className="flex items-center gap-1">
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button
-                key={n}
-                type="button"
-                onMouseEnter={() => setHoverRating(n)}
-                onMouseLeave={() => setHoverRating(0)}
-                onClick={() => setRating(n)}
-              >
-                <Star
-                  size={26}
-                  className={n <= (hoverRating || rating) ? "fill-accent text-accent" : "text-dark-border"}
-                />
-              </button>
-            ))}
+          <div className="flex items-center gap-1" onMouseLeave={() => setHoverRating(0)}>
+            {[1, 2, 3, 4, 5].map((n) => {
+              const full = displayRating >= n;
+              const half = !full && displayRating >= n - 0.5;
+              return (
+                <div key={n} className="relative" style={{ width: 26, height: 26 }}>
+                  <Star size={26} className="absolute inset-0 text-dark-border" />
+                  {(full || half) && (
+                    <span
+                      className="absolute inset-0 overflow-hidden"
+                      style={{ width: full ? "100%" : "50%" }}
+                    >
+                      <Star size={26} className="fill-accent text-accent" />
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    aria-label={`${n - 0.5} estrelas`}
+                    className="absolute inset-y-0 left-0 w-1/2"
+                    onMouseEnter={() => setHoverRating(n - 0.5)}
+                    onClick={() => setRating(n - 0.5)}
+                  />
+                  <button
+                    type="button"
+                    aria-label={`${n} estrelas`}
+                    className="absolute inset-y-0 right-0 w-1/2"
+                    onMouseEnter={() => setHoverRating(n)}
+                    onClick={() => setRating(n)}
+                  />
+                </div>
+              );
+            })}
+            <span className="ml-2 text-sm text-dark-text font-medium tabular-nums">
+              {displayRating > 0 ? displayRating.toFixed(1) : "-"}
+            </span>
           </div>
         </div>
 

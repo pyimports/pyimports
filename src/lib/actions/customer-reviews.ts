@@ -208,7 +208,7 @@ function toAdminCustomerReview(row: DbCustomerReview): AdminCustomerReview {
     customer_name: row.customer_name,
     customer_cpf: row.customer_cpf ?? undefined,
     is_manual: row.is_manual,
-    rating: row.rating,
+    rating: Number(row.rating),
     recommends: row.recommends,
     purchase_date: row.purchase_date,
     delivery_date: row.delivery_date,
@@ -230,14 +230,17 @@ export interface CreateManualReviewInput {
   deliveryDate: string;
   publishedAt: string;
   description: string;
-  productName?: string;
+  products: CustomerReviewProduct[];
   images: string[]; // URLs já enviadas via /api/reviews/upload-image
 }
 
 function validateManualReviewInput(input: CreateManualReviewInput): string | null {
   if (!input.orderNumber.trim()) return "Informe o número do pedido.";
   if (!input.customerName.trim()) return "Informe o nome do cliente.";
-  if (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 5) return "Nota inválida.";
+  // Nota aceita meia-estrela (1, 1.5, 2, ..., 5) — não precisa ser inteira.
+  if (input.rating < 1 || input.rating > 5 || Math.round(input.rating * 2) !== input.rating * 2) {
+    return "Nota inválida.";
+  }
   if (typeof input.recommends !== "boolean") return "Informe se o cliente recomenda.";
   if (!input.purchaseDate.trim() || Number.isNaN(new Date(input.purchaseDate).getTime())) {
     return "Data de compra inválida.";
@@ -267,9 +270,9 @@ export async function createManualCustomerReview(
   if (validationError) return { error: validationError };
 
   const service = createServiceClient();
-  const products: CustomerReviewProduct[] = input.productName?.trim()
-    ? [{ name: input.productName.trim(), quantity: 1 }]
-    : [];
+  const products: CustomerReviewProduct[] = input.products
+    .filter((p) => p.name.trim())
+    .map((p) => ({ name: p.name.trim(), quantity: p.quantity > 0 ? p.quantity : 1 }));
 
   const { error } = await service.from("customer_reviews").insert({
     order_id: null,
@@ -320,9 +323,9 @@ export async function updateManualCustomerReview(
   if (!existing) return { error: "Avaliação não encontrada." };
   if (!existing.is_manual) return { error: "Só é possível editar avaliações criadas manualmente." };
 
-  const products: CustomerReviewProduct[] = input.productName?.trim()
-    ? [{ name: input.productName.trim(), quantity: 1 }]
-    : [];
+  const products: CustomerReviewProduct[] = input.products
+    .filter((p) => p.name.trim())
+    .map((p) => ({ name: p.name.trim(), quantity: p.quantity > 0 ? p.quantity : 1 }));
 
   const { error } = await service
     .from("customer_reviews")
