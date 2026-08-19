@@ -10,7 +10,6 @@ import type { Product, ProductVariant, ProductMedia } from "@/types";
 
 interface Props {
   product: Product;
-  whatsappNumber: string;
 }
 
 // Tamanhos ativos de uma variante — tamanho desativado no admin nunca
@@ -19,7 +18,7 @@ function activeSizes(variant?: ProductVariant) {
   return variant?.sizes.filter((s) => s.is_active) ?? [];
 }
 
-export function ProductPdpClient({ product, whatsappNumber }: Props) {
+export function ProductPdpClient({ product }: Props) {
   // Cor desativada no admin nunca aparece como opção pro cliente.
   const variants = (product.variants ?? []).filter((v) => v.is_active);
   const hasVariants = variants.length > 0;
@@ -188,7 +187,6 @@ export function ProductPdpClient({ product, whatsappNumber }: Props) {
           selectedVariant={selectedVariant}
           selectedSize={selectedSize}
           colorSoldOut={colorSoldOut}
-          whatsappNumber={whatsappNumber}
         />
 
         {/* Trust badges */}

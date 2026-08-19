@@ -7,7 +7,6 @@ import { ProductCard } from "@/components/public/ProductCard";
 import { Container } from "@/components/common/SectionHeader";
 import { getProductBySlug as dbGetProductBySlug, getRelatedProducts as dbGetRelatedProducts } from "@/lib/db/products";
 import { getProductBySlug as mockGetProductBySlug, getRelatedProducts as mockGetRelatedProducts } from "@/data/mock-products";
-import { getPublicStoreSettings } from "@/lib/db/settings";
 import { routes } from "@/lib/routes";
 import type { Product } from "@/types";
 
@@ -38,22 +37,6 @@ export default async function ProdutoPage({ params }: Props) {
   }
 
   if (!product) notFound();
-
-  const settings = await getPublicStoreSettings();
-
-  // "Tamanhos disponíveis" some daqui — os tamanhos já aparecem como botões
-  // reais na área de compra (seletor de tamanho), então repetir como texto
-  // em Especificações é redundante. No lugar (mesma posição), mostra o SKU
-  // de forma discreta como "Código do produto" — nunca aparece se o
-  // produto não tiver SKU.
-  const rawSpecs = product.specifications ?? [];
-  const sizesIndex = rawSpecs.findIndex((spec) => spec.label === "Tamanhos disponíveis");
-  const displaySpecs = rawSpecs.filter((spec) => spec.label !== "Tamanhos disponíveis");
-  if (product.sku?.trim()) {
-    const codeSpec = { label: "Código do produto", value: product.sku };
-    const insertAt = sizesIndex === -1 ? displaySpecs.length : sizesIndex;
-    displaySpecs.splice(insertAt, 0, codeSpec);
-  }
 
   // Busca relacionados com fallback para mock (independente da busca de produto)
   let related: Product[] = [];
@@ -87,42 +70,19 @@ export default async function ProdutoPage({ params }: Props) {
 
         {/* Galeria + seletor de cor/tamanho + compra — tudo client-side pra
             trocar de cor sem reload (ver ProductPdpClient) */}
-        <ProductPdpClient product={product} whatsappNumber={settings.whatsapp_number} />
+        <ProductPdpClient product={product} />
 
-        {/* Description + Specs */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-20">
-          <div className="relative bg-dark-surface rounded-2xl border border-dark-border p-7 overflow-hidden">
-            <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-accent/20 to-transparent" />
-            <h2 className="text-base font-bold text-dark-text mb-5 tracking-wide">Descrição completa</h2>
-            <p className="text-sm text-muted leading-relaxed whitespace-pre-line">{product.description}</p>
+        {/* Avisos de segurança/uso — descrição completa e especificações
+            foram removidas da página do produto, mas o aviso continua
+            aparecendo quando o produto tiver um cadastrado. */}
+        {product.warnings && (
+          <div className="flex items-start gap-3 mb-20 p-4 bg-warning/5 border border-warning/20 rounded-xl">
+            <AlertTriangle size={16} className="text-warning flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-warning/90 leading-relaxed whitespace-pre-line">
+              {product.warnings}
+            </p>
           </div>
-
-          {displaySpecs.length > 0 && (
-            <div className="relative bg-dark-surface rounded-2xl border border-dark-border p-7 overflow-hidden">
-              <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-accent/20 to-transparent" />
-              <h2 className="text-base font-bold text-dark-text mb-5 tracking-wide">Especificações</h2>
-              <table className="w-full text-sm">
-                <tbody>
-                  {displaySpecs.map((spec, i) => (
-                    <tr key={i} className="border-b border-dark-border/60 last:border-0">
-                      <td className="py-3 pr-4 text-muted/80 font-medium w-1/3 text-xs uppercase tracking-wide">{spec.label}</td>
-                      <td className="py-3 text-dark-text text-sm">{spec.value}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {product.warnings && (
-                <div className="flex items-start gap-3 mt-6 p-4 bg-warning/5 border border-warning/20 rounded-xl">
-                  <AlertTriangle size={16} className="text-warning flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-warning/90 leading-relaxed whitespace-pre-line">
-                    {product.warnings}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        )}
 
         {/* Produtos relacionados */}
         {related.length > 0 && (

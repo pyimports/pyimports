@@ -2,14 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  ShoppingCart, Plus, Minus, CheckCircle2, MessageCircle, Tag, Sparkles, AlertCircle,
+  ShoppingCart, Plus, Minus, CheckCircle2, Tag, Sparkles, AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/common/Button";
 import { useCartStore } from "@/store/cart-store";
 import { useToastStore } from "@/store/toast-store";
 import { resolveBasePrice, calculateQuantityDiscountPrice } from "@/lib/pricing";
 import { formatCurrency } from "@/lib/formatters";
-import { generateProductPurchaseWhatsAppLink } from "@/lib/whatsapp";
 import type { Product, ProductVariant, ProductVariantSize } from "@/types";
 
 const UNLIMITED_STOCK_CAP = 9999;
@@ -20,10 +19,9 @@ interface ProductClientSectionProps {
   selectedVariant?: ProductVariant;
   selectedSize?: ProductVariantSize;
   colorSoldOut: boolean;
-  whatsappNumber: string;
 }
 
-export const ProductClientSection = ({ product, selectedVariant, selectedSize, colorSoldOut, whatsappNumber }: ProductClientSectionProps) => {
+export const ProductClientSection = ({ product, selectedVariant, selectedSize, colorSoldOut }: ProductClientSectionProps) => {
   const [qty, setQty]     = useState(1);
   const [added, setAdded] = useState(false);
   const [sizeWarning, setSizeWarning] = useState(false);
@@ -163,46 +161,11 @@ export const ProductClientSection = ({ product, selectedVariant, selectedSize, c
     </div>
   );
 
-  // ── Botão WhatsApp ───────────────────────────────────────────────────────
-  // Mensagem já inclui cor/tamanho escolhidos, quantidade e valor — não é
-  // mais a dúvida genérica de antes.
-  const whatsappHref = generateProductPurchaseWhatsAppLink({
-    productName: product.name,
-    colorName:   selectedVariant?.color_name,
-    size:        selectedSize?.size,
-    quantity:    qty,
-    total:       result.total,
-    storePhone:  whatsappNumber,
-  });
-
-  const whatsappBtn = product.allow_whatsapp && (
-    <a
-      href={whatsappHref}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-whatsapp/25 text-whatsapp hover:bg-whatsapp/10 hover:border-whatsapp/40 transition-all text-sm font-semibold"
-    >
-      <MessageCircle size={17} />
-      Comprar via WhatsApp
-    </a>
-  );
-
-  // No fluxo normal de compra, exige tamanho antes de abrir o WhatsApp — mas
-  // continua sendo um <a> de verdade (abre em nova aba, pode copiar link),
-  // só intercepta o clique quando falta escolher o tamanho.
-  const handleWhatsAppClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (sizeRequired) {
-      e.preventDefault();
-      setSizeWarning(true);
-    }
-  };
-
   if (!isAvailable) {
     return (
       <div className="space-y-4">
         {priceBlock}
         <Button variant="secondary" fullWidth size="lg" disabled>Produto indisponível</Button>
-        {whatsappBtn}
       </div>
     );
   }
@@ -212,7 +175,6 @@ export const ProductClientSection = ({ product, selectedVariant, selectedSize, c
       <div className="space-y-4">
         {priceBlock}
         <Button variant="secondary" fullWidth size="lg" disabled>Quantidade máxima no carrinho</Button>
-        {whatsappBtn}
       </div>
     );
   }
@@ -287,19 +249,6 @@ export const ProductClientSection = ({ product, selectedVariant, selectedSize, c
           ? "Adicionar ao carrinho"
           : `Adicionar ${qty} unidades — ${formatCurrency(result.total)}`}
       </Button>
-
-      {product.allow_whatsapp && (
-        <a
-          href={whatsappHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={handleWhatsAppClick}
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-whatsapp/25 text-whatsapp hover:bg-whatsapp/10 hover:border-whatsapp/40 transition-all text-sm font-semibold"
-        >
-          <MessageCircle size={17} />
-          Comprar via WhatsApp
-        </a>
-      )}
     </div>
   );
 };
