@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Star, X, ImagePlus, ThumbsUp, ThumbsDown, Plus } from "lucide-react";
 import { Modal } from "@/components/common/Modal";
 import { Input, Textarea } from "@/components/common/Input";
-import { Select } from "@/components/common/Select";
+import { SearchableSelect } from "@/components/common/SearchableSelect";
 import { Button } from "@/components/common/Button";
 import {
   createManualCustomerReview,
@@ -165,7 +165,7 @@ export function ManualReviewModal({ review, productOptions, onClose, onSaved }: 
             {products.map((product, i) => (
               <div key={i} className="flex items-center gap-2">
                 <div className="flex-1">
-                  <Select
+                  <SearchableSelect
                     options={productOptions}
                     value={product.name}
                     onChange={(v) => updateProduct(i, { name: v })}
