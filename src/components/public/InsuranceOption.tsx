@@ -46,9 +46,11 @@ export const InsuranceOption = () => {
         </div>
         <p className="text-xs text-muted mt-1 leading-relaxed">
           Se o pacote tiver algum problema ou extravio, reenviamos a mercadoria.{" "}
-          {Math.round(insurance_percentage * 100)}% do valor da compra.
+          {insurance_percentage > 0
+            ? `${Math.round(insurance_percentage * 100)}% do valor da compra.`
+            : "Sem custo, incluso pra todos os clientes."}
         </p>
-        {itemCount > 0 && (
+        {itemCount > 0 && insurance_percentage > 0 && (
           <p className="text-xs mt-1.5">
             <span className="text-muted">
               {Math.round(insurance_percentage * 100)}% de {formatCurrency(subtotal)} —{" "}
@@ -57,6 +59,9 @@ export const InsuranceOption = () => {
               {formatCurrency(insuranceTotal)}
             </span>
           </p>
+        )}
+        {itemCount > 0 && insurance_percentage === 0 && (
+          <p className="text-xs mt-1.5 text-accent font-semibold">Grátis</p>
         )}
       </div>
     </label>

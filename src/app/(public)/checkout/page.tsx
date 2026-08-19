@@ -177,7 +177,9 @@ export default function CheckoutPage() {
               {insurance_enabled && (
                 <div className="flex justify-between text-sm">
                   <span className="text-muted">Seguro da mercadoria</span>
-                  <span className="text-dark-text">{formatCurrency(insurance)}</span>
+                  <span className={insurance > 0 ? "text-dark-text" : "text-success font-semibold"}>
+                    {insurance > 0 ? formatCurrency(insurance) : "Grátis"}
+                  </span>
                 </div>
               )}
               <div className="flex justify-between text-sm">

@@ -140,7 +140,9 @@ export const CartSummary = ({ showCoupon }: CartSummaryProps) => {
           {insurance_enabled && (
             <div className="flex justify-between text-sm">
               <span className="text-muted">Seguro da mercadoria</span>
-              <span className="text-dark-text font-medium">{formatCurrency(insuranceValue)}</span>
+              <span className={insuranceValue > 0 ? "text-dark-text font-medium" : "text-success font-semibold"}>
+                {insuranceValue > 0 ? formatCurrency(insuranceValue) : "Grátis"}
+              </span>
             </div>
           )}
 
