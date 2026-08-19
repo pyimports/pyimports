@@ -12,14 +12,7 @@ export const InsuranceOption = () => {
   const insuranceTotal = subtotal * insurance_percentage;
 
   return (
-    <label
-      className={[
-        "flex items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-all duration-150",
-        insurance_enabled
-          ? "border-accent bg-accent-dim"
-          : "border-dark-border-light hover:border-accent/40 bg-dark-surface",
-      ].join(" ")}
-    >
+    <label className="flex items-start gap-3 p-4 rounded-2xl border border-dark-border bg-dark-surface cursor-pointer">
       <input
         type="checkbox"
         checked={insurance_enabled}
@@ -44,7 +37,7 @@ export const InsuranceOption = () => {
           <ShieldCheck size={16} className="text-accent flex-shrink-0" />
           Seguro da mercadoria
         </div>
-        <p className="text-xs text-muted mt-1 leading-relaxed">
+        <p className="text-sm text-muted mt-1 leading-relaxed">
           Se o pacote tiver algum problema ou extravio, reenviamos a mercadoria.{" "}
           {insurance_percentage > 0
             ? `${Math.round(insurance_percentage * 100)}% do valor da compra.`

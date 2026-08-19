@@ -183,8 +183,8 @@ export default function CheckoutPage() {
                 </div>
               )}
               <div className="flex justify-between text-sm">
-                <span className="text-muted">Frete</span>
-                <span className="text-dark-text">A combinar</span>
+                <span className="text-muted">Envio pela Shopee</span>
+                <span className="text-dark-text">R$ 50,00, pago pós o pedido</span>
               </div>
               <div className="border-t border-dark-border pt-3">
                 <div className="flex justify-between">
