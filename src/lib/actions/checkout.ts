@@ -470,9 +470,15 @@ export async function createOrder(
     }
 
     // 9. Cria a preferência de pagamento (provider ativo — stub por enquanto)
-    // e grava external_id/pix_code reais em `payments`.
-    const preferenceResult = await createPaymentPreferenceForOrder(service, orderId);
-    if ("error" in preferenceResult) throw new Error(preferenceResult.error);
+    // e grava external_id/pix_code reais em `payments` — só quando o método
+    // escolhido é Pix. No cartão, a cobrança é criada depois, direto pelo
+    // formulário de cartão (payWithCardPyxgate); criar a preferência Pix aqui
+    // também gerava uma cobrança fantasma na PYX Gate pra todo pedido, mesmo
+    // quando o cliente ia pagar com cartão e nunca via a aba Pix.
+    if (data.payment_method === "pix") {
+      const preferenceResult = await createPaymentPreferenceForOrder(service, orderId);
+      if ("error" in preferenceResult) throw new Error(preferenceResult.error);
+    }
 
     return { orderId, orderNumber, total };
   } catch (err: unknown) {
