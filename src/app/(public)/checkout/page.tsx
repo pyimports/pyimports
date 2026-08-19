@@ -78,6 +78,7 @@ export default function CheckoutPage() {
       })),
       coupon_code:        coupon_code ?? undefined,
       insurance_enabled,
+      payment_method:     paymentMethod,
     });
 
     setSubmitting(false);

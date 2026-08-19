@@ -6,6 +6,7 @@ import { createPaymentPreferenceForOrder } from "@/lib/payments/create-preferenc
 import { getPublicStoreSettings } from "@/lib/db/settings";
 import { digitsOnly, isValidCpf } from "@/lib/cpf";
 import { brasiliaToday } from "@/lib/timezone";
+import type { PaymentMethod } from "@/types";
 
 // ---------------------------------------------------------------------------
 // O front-end nunca é fonte de verdade para preço/estoque/desconto. O
@@ -28,6 +29,7 @@ export interface CheckoutFormData {
   items: CheckoutItemInput[];
   coupon_code?: string;
   insurance_enabled?: boolean;
+  payment_method: PaymentMethod;
 }
 
 export interface CreateOrderResult {
@@ -321,6 +323,9 @@ export async function createOrder(
   // pedidos por CPF (tela Acompanhar Pedido).
   if (!data.cpf?.trim()) return { error: "CPF é obrigatório." };
   if (!isValidCpf(data.cpf)) return { error: "CPF inválido." };
+  if (data.payment_method !== "pix" && data.payment_method !== "card") {
+    return { error: "Forma de pagamento inválida." };
+  }
 
   const service = createServiceClient();
 
@@ -379,7 +384,7 @@ export async function createOrder(
         customer_name:         data.name.trim(),
         customer_email:        data.email.trim().toLowerCase(),
         customer_phone:        data.phone.trim(),
-        payment_method:        "pix" as const,
+        payment_method:        data.payment_method,
         // Endereço não é mais coletado no checkout — o admin combina o envio
         // (Shopee) e preenche isso depois, se precisar.
         shipping_street:       "",
@@ -432,7 +437,7 @@ export async function createOrder(
     // pelo provider de pagamento ativo — stub hoje, gateway real depois)
     const { error: paymentError } = await service.from("payments").insert({
       order_id:       orderId,
-      method:         "pix" as const,
+      method:         data.payment_method,
       status:         "pending" as const,
       amount:         total,
       pix_expiration: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
