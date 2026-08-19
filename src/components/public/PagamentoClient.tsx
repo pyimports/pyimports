@@ -211,10 +211,61 @@ export function PagamentoClient({
   const [cardHolderDocument, setCardHolderDocument] = useState("");
   const [cardBrand, setCardBrand] = useState("VISA");
   const [cardBillingZip, setCardBillingZip] = useState("");
+  const [cardStreet, setCardStreet] = useState("");
+  const [cardAddressNumber, setCardAddressNumber] = useState("");
+  const [cardComplement, setCardComplement] = useState("");
+  const [cardNeighborhood, setCardNeighborhood] = useState("");
+  const [cardCity, setCardCity] = useState("");
+  const [cardState, setCardState] = useState("");
+  const [cepLoading, setCepLoading] = useState(false);
+  const [cepError, setCepError] = useState("");
   const [installments, setInstallments] = useState("1");
   const [cardSubmitting, setCardSubmitting] = useState(false);
   const [cardStep, setCardStep] = useState<"idle" | "3ds" | "paying">("idle");
   const [cardError, setCardError] = useState("");
+
+  // Autocompleta rua/bairro/cidade/estado assim que o CEP fica completo —
+  // o cliente só precisa digitar número e complemento. ViaCEP é público,
+  // sem chave, e aceita chamada direto do navegador (CORS liberado).
+  useEffect(() => {
+    const digits = cardBillingZip.replace(/\D/g, "");
+    if (digits.length !== 8) {
+      setCepError("");
+      return;
+    }
+
+    let cancelled = false;
+    setCepLoading(true);
+    setCepError("");
+
+    fetch(`https://viacep.com.br/ws/${digits}/json/`)
+      .then((res) => res.json())
+      .then((data: { erro?: boolean; logradouro?: string; bairro?: string; localidade?: string; uf?: string }) => {
+        if (cancelled) return;
+        if (data.erro) {
+          setCepError("CEP não encontrado.");
+          setCardStreet("");
+          setCardNeighborhood("");
+          setCardCity("");
+          setCardState("");
+          return;
+        }
+        setCardStreet(data.logradouro ?? "");
+        setCardNeighborhood(data.bairro ?? "");
+        setCardCity(data.localidade ?? "");
+        setCardState(data.uf ?? "");
+      })
+      .catch(() => {
+        if (!cancelled) setCepError("Não foi possível buscar o CEP. Preencha o endereço manualmente.");
+      })
+      .finally(() => {
+        if (!cancelled) setCepLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cardBillingZip]);
 
   // Total real no cartão pra quantidade de parcelas escolhida — taxa da
   // adquirente sobe conforme parcela (ver src/lib/pricing.ts). Recalculado
@@ -596,6 +647,52 @@ export function PagamentoClient({
                     placeholder="00000-000"
                     inputMode="numeric"
                     maxLength={9}
+                    required
+                    helper={cepLoading ? "Buscando endereço..." : undefined}
+                    error={cepError}
+                  />
+                </div>
+                <Input
+                  label="Endereço"
+                  value={cardStreet}
+                  onChange={(e) => setCardStreet(e.target.value)}
+                  placeholder="Rua/Avenida"
+                  required
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    label="Número"
+                    value={cardAddressNumber}
+                    onChange={(e) => setCardAddressNumber(e.target.value)}
+                    placeholder="Nº"
+                    required
+                  />
+                  <Input
+                    label="Complemento"
+                    value={cardComplement}
+                    onChange={(e) => setCardComplement(e.target.value)}
+                    placeholder="Apto, bloco... (opcional)"
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <Input
+                    label="Bairro"
+                    value={cardNeighborhood}
+                    onChange={(e) => setCardNeighborhood(e.target.value)}
+                    required
+                  />
+                  <Input
+                    label="Cidade"
+                    value={cardCity}
+                    onChange={(e) => setCardCity(e.target.value)}
+                    required
+                  />
+                  <Input
+                    label="Estado"
+                    value={cardState}
+                    onChange={(e) => setCardState(e.target.value.toUpperCase())}
+                    placeholder="UF"
+                    maxLength={2}
                     required
                   />
                 </div>
