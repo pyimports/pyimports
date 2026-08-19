@@ -1263,7 +1263,12 @@ export type Database = {
     }; // fim Tables
 
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      search_products: {
+        Args: { search_term: string; result_limit?: number };
+        Returns: { id: string; rank: number }[];
+      };
+    };
 
     Enums: {
       product_availability:    DbProductAvailability;

@@ -231,6 +231,41 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
   return product;
 }
 
+// Busca de produtos por texto livre — não precisa do nome exatamente igual
+// (ignora acento, aceita parte do nome, tolera pequenos erros de digitação
+// via similaridade trigram). Ver migration 041_product_search.sql.
+export async function searchProducts(query: string, limit = 24): Promise<Product[]> {
+  const term = query.trim();
+  if (!term) return [];
+
+  const supabase = await createClient();
+
+  const { data: matches, error: rpcError } = await supabase
+    .rpc("search_products", { search_term: term, result_limit: limit });
+
+  if (rpcError) throw rpcError;
+  if (!matches || matches.length === 0) return [];
+
+  const ids = matches.map((m: { id: string }) => m.id);
+
+  const { data, error } = await supabase
+    .from("products")
+    .select(PRODUCT_FIELDS)
+    .in("id", ids)
+    .eq("is_active", true);
+
+  if (error) throw error;
+
+  const products = (data ?? []).map((row) => toProduct(row as ProductRowWithRelations));
+  await attachStockItemVariants(supabase, products);
+
+  // .in() não garante ordem — reordena pelo rank de similaridade que veio do RPC
+  const orderById = new Map(ids.map((id: string, index: number) => [id, index]));
+  products.sort((a, b) => (orderById.get(a.id) ?? 0) - (orderById.get(b.id) ?? 0));
+
+  return products;
+}
+
 // Produtos relacionados (mesma categoria, excluindo o produto atual)
 export async function getRelatedProducts(
   productId: string,

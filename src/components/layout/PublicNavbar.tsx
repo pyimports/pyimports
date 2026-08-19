@@ -8,6 +8,7 @@ import { ShoppingCart, Menu, X, ChevronRight } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { routes } from "@/lib/routes";
 import { AnnouncementBell } from "@/components/layout/AnnouncementBell";
+import { ProductSearchBar } from "@/components/layout/ProductSearchBar";
 import type { Category, Announcement } from "@/types";
 
 interface NavLink {
@@ -121,6 +122,9 @@ export const PublicNavbar = ({ categories, announcements = [], whatsappNumber, w
 
             {/* ── Actions ──────────────────────────── */}
             <div className="flex items-center gap-3">
+
+              {/* Buscar produtos */}
+              <ProductSearchBar />
 
               {/* Avisos e promoções */}
               <AnnouncementBell announcements={announcements} />
