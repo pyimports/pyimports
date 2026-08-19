@@ -32,7 +32,6 @@ export const CartSummary = ({ showCoupon }: CartSummaryProps) => {
     getTotalPix,
     getTotalCard,
     coupon_code,
-    insurance_enabled,
   } = useCartStore();
 
   if (!mounted) {
@@ -137,18 +136,16 @@ export const CartSummary = ({ showCoupon }: CartSummaryProps) => {
             </div>
           )}
 
-          {insurance_enabled && (
-            <div className="flex justify-between text-sm">
-              <span className="text-muted">Seguro da mercadoria</span>
-              <span className={insuranceValue > 0 ? "text-dark-text font-medium" : "text-success font-semibold"}>
-                {insuranceValue > 0 ? formatCurrency(insuranceValue) : "Grátis"}
-              </span>
-            </div>
-          )}
+          <div className="flex justify-between text-sm">
+            <span className="text-muted">Seguro da mercadoria</span>
+            <span className={insuranceValue > 0 ? "text-dark-text font-medium" : "text-success font-semibold"}>
+              {insuranceValue > 0 ? formatCurrency(insuranceValue) : "Grátis"}
+            </span>
+          </div>
 
           <div className="flex justify-between text-sm">
-            <span className="text-muted">Envio pela Shopee</span>
-            <span className="text-dark-text font-medium">R$ 50,00, pago pós o pedido</span>
+            <span className="text-muted">Envio (Shopee)</span>
+            <span className="text-dark-text font-medium">R$ 50,00</span>
           </div>
 
           <div className="border-t border-dark-border/70 pt-4 space-y-2">
@@ -160,7 +157,7 @@ export const CartSummary = ({ showCoupon }: CartSummaryProps) => {
               <span>No cartão de crédito</span>
               <span className="font-medium">{formatCurrency(totalCard)}</span>
             </div>
-            <p className="text-[11px] text-muted/70">Frete não incluso — combinado após o pedido</p>
+            <p className="text-[11px] text-muted/70">Frete de R$ 50,00 pago à parte, após o pedido</p>
           </div>
 
           <Link href={routes.checkout}>

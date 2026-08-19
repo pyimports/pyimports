@@ -167,11 +167,10 @@ export const useCartStore = create<CartState & CartActions>()(
         return coupon_discount;
       },
 
-      getInsuranceValue: () => {
-        const { insurance_enabled, insurance_percentage } = get();
-        if (!insurance_enabled) return 0;
-        return get().getSubtotal() * insurance_percentage;
-      },
+      // Seguro é sempre incluso, sem opção de remover — não depende mais de
+      // insurance_enabled (mantido no estado só por compatibilidade com
+      // dados já persistidos/histórico de pedidos).
+      getInsuranceValue: () => get().getSubtotal() * get().insurance_percentage,
 
       getTotalPix: () => {
         const subtotal  = get().getSubtotal();
