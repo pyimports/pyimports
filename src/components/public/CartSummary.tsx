@@ -6,7 +6,6 @@ import { ShoppingBag } from "lucide-react";
 import { Button } from "@/components/common/Button";
 import { CartItem } from "@/components/public/CartItem";
 import { CouponInput } from "@/components/public/CouponInput";
-import { ShippingNotice } from "@/components/public/ShippingNotice";
 import { InsuranceOption } from "@/components/public/InsuranceOption";
 import { formatCurrency } from "@/lib/formatters";
 import { useCartStore } from "@/store/cart-store";
@@ -91,21 +90,16 @@ export const CartSummary = ({ showCoupon }: CartSummaryProps) => {
           ))}
         </div>
 
-        {/* Coupon + Shipping — a caixa de cupom só aparece se existir algum
-            cupom ativo (showCoupon, calculado no server) OU se o cliente já
-            estiver com um aplicado (mesmo que tenha sido desativado depois,
-            ele continua podendo ver/remover). Sem isso, some, pra não
-            poluir a tela de quem não tem nenhum cupom pra usar. */}
-        <div className={couponVisible ? "grid grid-cols-1 md:grid-cols-2 gap-4" : ""}>
-          {couponVisible && (
-            <div className="bg-dark-surface rounded-2xl border border-dark-border p-4">
-              <CouponInput />
-            </div>
-          )}
+        {/* Cupom só aparece se existir algum cupom ativo (showCoupon,
+            calculado no server) OU se o cliente já estiver com um aplicado
+            (mesmo que tenha sido desativado depois, ele continua podendo
+            ver/remover). Sem isso, some, pra não poluir a tela de quem não
+            tem nenhum cupom pra usar. */}
+        {couponVisible && (
           <div className="bg-dark-surface rounded-2xl border border-dark-border p-4">
-            <ShippingNotice />
+            <CouponInput />
           </div>
-        </div>
+        )}
 
         <InsuranceOption />
       </div>
