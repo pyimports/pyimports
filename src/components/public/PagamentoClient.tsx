@@ -219,6 +219,7 @@ export function PagamentoClient({
   const [cardState, setCardState] = useState("");
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState("");
+  const [cepFound, setCepFound] = useState(false);
   const [installments, setInstallments] = useState("1");
   const [cardSubmitting, setCardSubmitting] = useState(false);
   const [cardStep, setCardStep] = useState<"idle" | "3ds" | "paying">("idle");
@@ -229,6 +230,7 @@ export function PagamentoClient({
   // sem chave, e aceita chamada direto do navegador (CORS liberado).
   useEffect(() => {
     const digits = cardBillingZip.replace(/\D/g, "");
+    setCepFound(false);
     if (digits.length !== 8) {
       setCepError("");
       return;
@@ -254,9 +256,10 @@ export function PagamentoClient({
         setCardNeighborhood(data.bairro ?? "");
         setCardCity(data.localidade ?? "");
         setCardState(data.uf ?? "");
+        setCepFound(true);
       })
       .catch(() => {
-        if (!cancelled) setCepError("Não foi possível buscar o CEP. Preencha o endereço manualmente.");
+        if (!cancelled) setCepError("Não foi possível buscar o CEP. Confira o número digitado.");
       })
       .finally(() => {
         if (!cancelled) setCepLoading(false);
@@ -652,50 +655,37 @@ export function PagamentoClient({
                     error={cepError}
                   />
                 </div>
-                <Input
-                  label="Endereço"
-                  value={cardStreet}
-                  onChange={(e) => setCardStreet(e.target.value)}
-                  placeholder="Rua/Avenida"
-                  required
-                />
-                <div className="grid grid-cols-2 gap-3">
-                  <Input
-                    label="Número"
-                    value={cardAddressNumber}
-                    onChange={(e) => setCardAddressNumber(e.target.value)}
-                    placeholder="Nº"
-                    required
-                  />
-                  <Input
-                    label="Complemento"
-                    value={cardComplement}
-                    onChange={(e) => setCardComplement(e.target.value)}
-                    placeholder="Apto, bloco... (opcional)"
-                  />
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <Input
-                    label="Bairro"
-                    value={cardNeighborhood}
-                    onChange={(e) => setCardNeighborhood(e.target.value)}
-                    required
-                  />
-                  <Input
-                    label="Cidade"
-                    value={cardCity}
-                    onChange={(e) => setCardCity(e.target.value)}
-                    required
-                  />
-                  <Input
-                    label="Estado"
-                    value={cardState}
-                    onChange={(e) => setCardState(e.target.value.toUpperCase())}
-                    placeholder="UF"
-                    maxLength={2}
-                    required
-                  />
-                </div>
+                {cepFound && (
+                  <>
+                    <Input
+                      label="Endereço"
+                      value={cardStreet}
+                      readOnly
+                      placeholder="Rua/Avenida"
+                      required
+                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      <Input
+                        label="Número"
+                        value={cardAddressNumber}
+                        onChange={(e) => setCardAddressNumber(e.target.value)}
+                        placeholder="Nº"
+                        required
+                      />
+                      <Input
+                        label="Complemento"
+                        value={cardComplement}
+                        onChange={(e) => setCardComplement(e.target.value)}
+                        placeholder="Apto, bloco... (opcional)"
+                      />
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <Input label="Bairro" value={cardNeighborhood} readOnly required />
+                      <Input label="Cidade" value={cardCity} readOnly required />
+                      <Input label="Estado" value={cardState} readOnly required />
+                    </div>
+                  </>
+                )}
                 <Select
                   label="Parcelas"
                   value={installments}
