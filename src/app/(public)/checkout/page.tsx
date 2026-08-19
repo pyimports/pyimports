@@ -184,7 +184,7 @@ export default function CheckoutPage() {
                 <span className="text-muted">Envio (Shopee)</span>
                 <span className="text-dark-text">R$ 50,00</span>
               </div>
-              <p className="text-[11px] text-muted/70 -mt-2">Frete pago à parte, após o pedido</p>
+              <p className="text-[11px] text-muted/70 -mt-2">Pagamento separado, pós finalização do pedido</p>
               <div className="border-t border-dark-border pt-3">
                 <div className="flex justify-between">
                   <span className="text-sm font-semibold text-dark-text">Total a pagar</span>

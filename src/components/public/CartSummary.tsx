@@ -143,9 +143,12 @@ export const CartSummary = ({ showCoupon }: CartSummaryProps) => {
             </span>
           </div>
 
-          <div className="flex justify-between text-sm">
-            <span className="text-muted">Envio (Shopee)</span>
-            <span className="text-dark-text font-medium">R$ 50,00</span>
+          <div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted">Envio (Shopee)</span>
+              <span className="text-dark-text font-medium">R$ 50,00</span>
+            </div>
+            <p className="text-[11px] text-muted/70 mt-0.5">Pagamento separado, pós finalização do pedido</p>
           </div>
 
           <div className="border-t border-dark-border/70 pt-4 space-y-2">
@@ -157,7 +160,6 @@ export const CartSummary = ({ showCoupon }: CartSummaryProps) => {
               <span>No cartão de crédito</span>
               <span className="font-medium">{formatCurrency(totalCard)}</span>
             </div>
-            <p className="text-[11px] text-muted/70">Frete de R$ 50,00 pago à parte, após o pedido</p>
           </div>
 
           <Link href={routes.checkout}>
