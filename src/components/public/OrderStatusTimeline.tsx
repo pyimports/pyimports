@@ -52,11 +52,16 @@ export const OrderStatusTimeline = ({
         // Cada label da timeline (exceto "Aguardando pagamento") descreve um
         // evento que já aconteceu ("Envio pago", "Etiqueta emitida"...), não
         // algo em progresso — então o passo atual conta como concluído
-        // também. Só "pending_payment" é uma espera de verdade (ninguém
-        // "concluiu" aguardar), por isso é o único que mostra o spinner.
+        // também. "pending_payment" é uma espera de verdade (ninguém
+        // "concluiu" aguardar), por isso mostra o spinner.
         const isWaiting = status === "pending_payment" && i === currentIndex;
+        // Depois que o cliente confirma o pagamento do frete, o próximo
+        // passo (emissão da etiqueta) também vira uma espera de verdade —
+        // mostra o spinner + aviso de que a etiqueta está sendo gerada, em
+        // vez de ficar como um passo futuro qualquer sem nenhuma indicação.
+        const isGeneratingLabel = status === "label_issued" && currentStatus === "shipping_paid";
         const isCompleted = i < currentIndex || (i === currentIndex && !isWaiting);
-        const isCurrent = isWaiting;
+        const isCurrent = isWaiting || isGeneratingLabel;
         const historyEntry = history.find((h) => h.new_status === status);
         // A linha que sai do último passo concluído rumo ao próximo (ainda
         // não feito) ganha uma animação de "fluxo" — dá a sensação de
@@ -121,7 +126,9 @@ export const OrderStatusTimeline = ({
                 </div>
               )}
               {isCurrent && !historyEntry && (
-                <div className="text-xs text-muted mt-0.5">Em andamento</div>
+                <div className="text-xs text-muted mt-0.5">
+                  {isGeneratingLabel ? "Estamos gerando sua etiqueta..." : "Em andamento"}
+                </div>
               )}
             </div>
           </div>
