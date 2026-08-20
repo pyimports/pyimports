@@ -36,16 +36,36 @@ export const OrderStatusSelect = ({ currentStatus, orderId, onStatusChange }: Pr
   // Calculada na hora de abrir (não via CSS) — o botão vive dentro de uma
   // tabela com overflow-hidden/overflow-x-auto, então `position: absolute`
   // seria cortado. `fixed` com coordenadas reais do botão nunca é cortado.
-  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+  // Abre pra cima quando não sobra espaço embaixo (botão perto do rodapé da
+  // tela) — sem isso o menu abria sempre pra baixo e ficava cortado pelo
+  // fim da viewport, sem como rolar até o resto das opções.
+  const [menuPos, setMenuPos] = useState<{
+    top?: number;
+    bottom?: number;
+    left: number;
+    maxHeight: number;
+  } | null>(null);
 
   const currentClasses =
     COLOR_CLASSES[ORDER_STATUS_COLORS[currentStatus]] ??
     "bg-dark-alt border-dark-border text-muted";
 
+  const MARGIN = 8;
+
   const handleToggle = () => {
     if (!open && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      setMenuPos({ top: rect.bottom + 4, left: rect.left });
+      const spaceBelow = window.innerHeight - rect.bottom - MARGIN;
+      const spaceAbove = rect.top - MARGIN;
+
+      // Só abre pra cima se embaixo não couber e em cima tiver mais espaço —
+      // caso contrário mantém pra baixo (mais previsível) e deixa o scroll
+      // interno (maxHeight abaixo) cobrir o resto.
+      if (spaceBelow < 200 && spaceAbove > spaceBelow) {
+        setMenuPos({ bottom: window.innerHeight - rect.top + 4, left: rect.left, maxHeight: spaceAbove });
+      } else {
+        setMenuPos({ top: rect.bottom + 4, left: rect.left, maxHeight: spaceBelow });
+      }
     }
     setOpen((v) => !v);
   };
@@ -104,8 +124,14 @@ export const OrderStatusSelect = ({ currentStatus, orderId, onStatusChange }: Pr
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div
-            style={{ position: "fixed", top: menuPos.top, left: menuPos.left }}
-            className="z-50 bg-dark-surface border border-dark-border rounded-xl shadow-xl overflow-hidden min-w-44"
+            style={{
+              position: "fixed",
+              top: menuPos.top,
+              bottom: menuPos.bottom,
+              left: menuPos.left,
+              maxHeight: menuPos.maxHeight,
+            }}
+            className="z-50 bg-dark-surface border border-dark-border rounded-xl shadow-xl overflow-y-auto min-w-44"
           >
             {next.map((status) => (
               <button
