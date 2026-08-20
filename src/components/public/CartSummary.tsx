@@ -140,7 +140,7 @@ export const CartSummary = ({ showCoupon }: CartSummaryProps) => {
           <div>
             <div className="flex justify-between text-sm">
               <span className="text-muted">Envio (Shopee)</span>
-              <span className="text-dark-text font-medium">R$ 50,00</span>
+              <span className="text-dark-text font-medium">R$ 40,00 a R$ 80,00</span>
             </div>
             <p className="text-[11px] text-muted/70 mt-0.5">Pagamento separado, pós finalização do pedido</p>
           </div>

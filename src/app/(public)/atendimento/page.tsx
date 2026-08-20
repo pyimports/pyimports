@@ -47,8 +47,8 @@ export default async function AtendimentoPage() {
           <FaqItem question="Como funciona o envio dos produtos?">
             <p>
               Enviamos pela <strong className="text-dark-text">Shopee</strong> pra todo o Brasil,
-              de forma discreta. O frete é um valor fixo de{" "}
-              <strong className="text-dark-text">R$ 50,00</strong>, pago à parte, depois da
+              de forma discreta. O frete fica entre{" "}
+              <strong className="text-dark-text">R$ 40,00 e R$ 80,00</strong>, pago à parte, depois da
               confirmação do pagamento do produto.
             </p>
           </FaqItem>
