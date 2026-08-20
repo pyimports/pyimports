@@ -37,6 +37,7 @@ export function PedidoClient({ order }: Props) {
   const [notesSaved, setNotesSaved] = useState(false);
   const [manualName, setManualName] = useState("");
   const [summaryCopied, setSummaryCopied] = useState(false);
+  const [shippingSummaryCopied, setShippingSummaryCopied] = useState(false);
   const [confirmingPayment, setConfirmingPayment] = useState(false);
   const [releasingLink, setReleasingLink] = useState(false);
   const [releaseError, setReleaseError] = useState("");
@@ -85,6 +86,20 @@ export function PedidoClient({ order }: Props) {
     navigator.clipboard.writeText(manualSummaryText).catch(() => {});
     setSummaryCopied(true);
     setTimeout(() => setSummaryCopied(false), 2000);
+  };
+
+  // Resumo pronto pra colar na Shopee (buscar o pedido) depois que o cliente
+  // já mandou nome + ID via "Acompanhar Pedido" — diferente do manualSummaryText
+  // acima, que é usado ANTES disso, com nome digitado à mão pelo admin.
+  const shippingProductsList = (order.items ?? [])
+    .map((item) => `- ${item.quantity}x ${item.product_name}`)
+    .join("\n");
+  const shippingSummaryText = `Nome: ${order.shipping_customer_name}\nProduto:\n${shippingProductsList}\nID do Pedido: ${order.shipping_order_id}`;
+
+  const handleCopyShippingSummary = () => {
+    navigator.clipboard.writeText(shippingSummaryText).catch(() => {});
+    setShippingSummaryCopied(true);
+    setTimeout(() => setShippingSummaryCopied(false), 2000);
   };
 
   const handleConfirmPayment = () => {
@@ -385,6 +400,21 @@ export function PedidoClient({ order }: Props) {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted">ID do pedido</span>
                     <span className="text-dark-text font-mono">{order.shipping_order_id}</span>
+                  </div>
+
+                  <div className="mt-3 pt-3 border-t border-dark-border space-y-2">
+                    <pre className="whitespace-pre-wrap break-words text-xs bg-dark-alt border border-dark-border rounded-xl px-3 py-2.5 text-dark-text font-mono">
+{shippingSummaryText}
+                    </pre>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      fullWidth
+                      leftIcon={shippingSummaryCopied ? <CheckCircle2 size={13} /> : <Copy size={13} />}
+                      onClick={handleCopyShippingSummary}
+                    >
+                      {shippingSummaryCopied ? "Copiado!" : "Copiar"}
+                    </Button>
                   </div>
                 </div>
               )}
