@@ -7,7 +7,7 @@ import { OrderStatusTimeline } from "@/components/public/OrderStatusTimeline";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { StatusBadge, Badge } from "@/components/common/Badge";
-import { formatCurrency, formatDate, formatTime } from "@/lib/formatters";
+import { formatCurrency, formatDate, formatTime, formatDateTime } from "@/lib/formatters";
 import { maskCpfDisplay } from "@/lib/mask";
 import { generateOrderWhatsAppLink } from "@/lib/whatsapp";
 import { capitalizeWords } from "@/lib/name";
@@ -172,6 +172,11 @@ export function OrderDetailView({ order, cpf, whatsappNumber }: Props) {
   const shippingLinkMsRemaining = order.shipping_link_eta
     ? new Date(order.shipping_link_eta).getTime() - now
     : null;
+
+  // Fica registrado permanentemente (vem do banco, sobrevive a reload) — não
+  // depende do shippingPaidOverride, que é só um flash de sucesso da sessão
+  // atual. Serve de comprovante do que o próprio cliente digitou e enviou.
+  const shippingConfirmedEntry = order.status_history.find((h) => h.new_status === "shipping_paid");
 
   const handleOpenShippingConfirmModal = () => {
     setConfirmError("");
@@ -655,6 +660,32 @@ export function OrderDetailView({ order, cpf, whatsappNumber }: Props) {
           <p className="text-sm text-success font-medium">
             Frete confirmado! Estamos preparando a etiqueta de envio.
           </p>
+        </div>
+      )}
+
+      {/* Comprovante do que o cliente enviou — fica salvo no pedido (não some
+          ao atualizar a página), pra ele sempre poder conferir o que digitou. */}
+      {order.shipping_customer_name && order.shipping_order_id && (
+        <div className="bg-dark-surface rounded-2xl border border-dark-border p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 size={15} className="text-success flex-shrink-0" />
+            <p className="text-sm font-bold text-dark-text">Dados que você enviou</p>
+          </div>
+          <div className="bg-dark-alt border border-dark-border rounded-xl p-3 space-y-1.5">
+            <div className="flex justify-between text-sm gap-3">
+              <span className="text-muted flex-shrink-0">Nome</span>
+              <span className="text-dark-text text-right truncate">{order.shipping_customer_name}</span>
+            </div>
+            <div className="flex justify-between text-sm gap-3">
+              <span className="text-muted flex-shrink-0">ID do pedido</span>
+              <span className="text-dark-text font-mono text-right truncate">{order.shipping_order_id}</span>
+            </div>
+          </div>
+          {shippingConfirmedEntry && (
+            <p className="text-xs text-muted">
+              Confirmado por você em {formatDateTime(shippingConfirmedEntry.created_at)}
+            </p>
+          )}
         </div>
       )}
 
