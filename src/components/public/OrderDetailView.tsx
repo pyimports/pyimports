@@ -11,7 +11,7 @@ import { formatCurrency, formatDate, formatTime, formatDateTime } from "@/lib/fo
 import { maskCpfDisplay } from "@/lib/mask";
 import { generateOrderWhatsAppLink } from "@/lib/whatsapp";
 import { capitalizeWords } from "@/lib/name";
-import { confirmShippingPayment, confirmLabelReceived } from "@/lib/actions/shipping-confirmation";
+import { confirmShippingPayment, confirmLabelReceived, requestShippingEditAuthorization } from "@/lib/actions/shipping-confirmation";
 import type { OrderStatus } from "@/types";
 import type { PublicOrderDetail } from "@/lib/actions/order-lookup";
 
@@ -110,6 +110,39 @@ export function OrderDetailView({ order, cpf, whatsappNumber }: Props) {
   const [idHelpOpen, setIdHelpOpen] = useState(false);
   const [pasteError, setPasteError] = useState("");
 
+  // Cliente errou algo no nome/ID que já enviou — pede pro admin autorizar
+  // uma correção. editRequestedOverride é só o flash imediato da sessão
+  // atual; order.shipping_edit_requested_at (vindo do banco) é quem manda
+  // depois de qualquer atualização/reload.
+  const [editRequestSubmitting, setEditRequestSubmitting] = useState(false);
+  const [editRequestError, setEditRequestError] = useState("");
+  const [editRequestedOverride, setEditRequestedOverride] = useState(false);
+  const editAuthorized = !!order.shipping_edit_authorized_at;
+  const editRequested = editRequestedOverride || !!order.shipping_edit_requested_at;
+
+  // Pré-preenche o formulário de correção com o que já foi enviado, assim
+  // que o admin autoriza — o cliente só ajusta o que errou, sem digitar tudo
+  // de novo do zero.
+  useEffect(() => {
+    if (editAuthorized) {
+      setShopeeName(order.shipping_customer_name ?? "");
+      setShopeeOrderId(order.shipping_order_id ?? "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editAuthorized]);
+
+  const handleRequestEdit = async () => {
+    setEditRequestError("");
+    setEditRequestSubmitting(true);
+    const result = await requestShippingEditAuthorization(order.order_number, cpf);
+    setEditRequestSubmitting(false);
+    if ("error" in result) {
+      setEditRequestError(result.error);
+      return;
+    }
+    setEditRequestedOverride(true);
+  };
+
   // ID do pedido na Shopee sempre começa com número e tem no máximo 14
   // caracteres — avisa e bloqueia o envio antes de mandar pro servidor, em
   // vez de só descobrir depois (ou pior, cortar em silêncio o que foi colado).
@@ -202,6 +235,11 @@ export function OrderDetailView({ order, cpf, whatsappNumber }: Props) {
   const handleConfirmShipping = async () => {
     setConfirmError("");
     setConfirmSubmitting(true);
+    // Precisa checar ANTES de enviar — depois do envio bem-sucedido o campo
+    // shipping_edit_authorized_at já foi consumido/limpo no servidor, então
+    // não daria mais pra distinguir "primeiro envio" de "correção" pelo prop
+    // order (ele só atualiza depois, via polling/refresh).
+    const wasCorrection = editAuthorized;
     const result = await confirmShippingPayment(order.order_number, cpf, shopeeName, shopeeOrderId);
     setConfirmSubmitting(false);
     if ("error" in result) {
@@ -210,7 +248,15 @@ export function OrderDetailView({ order, cpf, whatsappNumber }: Props) {
       return;
     }
     setShippingConfirmModalOpen(false);
-    setShippingPaidOverride(true);
+    if (wasCorrection) {
+      // Correção: o status do pedido não muda (pode já estar em
+      // label_issued/completed) — só limpa o pedido de edição, sem forçar
+      // shippingPaidOverride (que faria a tela "regredir" pra um passo
+      // anterior mesmo quando o pedido já avançou mais que isso).
+      setEditRequestedOverride(false);
+    } else {
+      setShippingPaidOverride(true);
+    }
   };
 
   const handleConfirmLabel = async () => {
@@ -447,32 +493,51 @@ export function OrderDetailView({ order, cpf, whatsappNumber }: Props) {
         </div>
       )}
 
-      {/* Link de pagamento do frete — aparece assim que o sistema libera */}
-      {effectiveStatus === "shipping_link_pending" && order.shipping_payment_link && (
+      {/* Link de pagamento do frete — aparece assim que o sistema libera.
+          Mesmo bloco também serve pra correção: quando o admin autoriza uma
+          edição (editAuthorized), reaparece só a parte de nome/ID, sem o
+          link de pagamento (já foi pago) nem a instrução de pagar de novo. */}
+      {((effectiveStatus === "shipping_link_pending" && order.shipping_payment_link) || editAuthorized) && (
         <div className="bg-dark-surface rounded-2xl border border-accent/30 p-6 space-y-4">
-          <h2 className="text-sm font-bold text-dark-text flex items-center gap-2">
-            <Truck size={15} className="text-accent" />
-            Pagamento do frete
-          </h2>
-          <p className="text-sm text-muted">
-            Pague o frete no link abaixo e depois confirme aqui embaixo com seu nome e o ID do
-            pedido da Shopee, pra seguirmos com o envio.
-          </p>
-          <a href={order.shipping_payment_link} target="_blank" rel="noopener noreferrer" className="block">
-            <Button
-              variant="accent"
-              fullWidth
-              leftIcon={<ExternalLink size={14} />}
-              className="!bg-gradient-to-r !from-amber-400 !to-yellow-500 !text-dark-bg hover:!from-amber-300 hover:!to-yellow-400 uppercase tracking-wide animate-pulse-gold"
-            >
-              Pagar o frete
-            </Button>
-          </a>
+          {editAuthorized ? (
+            <>
+              <h2 className="text-sm font-bold text-dark-text flex items-center gap-2">
+                <Truck size={15} className="text-accent" />
+                Corrigir dados do frete
+              </h2>
+              <p className="text-sm text-muted">
+                Edição liberada pelo suporte — corrija o que precisar e envie de novo.
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-sm font-bold text-dark-text flex items-center gap-2">
+                <Truck size={15} className="text-accent" />
+                Pagamento do frete
+              </h2>
+              <p className="text-sm text-muted">
+                Pague o frete no link abaixo e depois confirme aqui embaixo com seu nome e o ID do
+                pedido da Shopee, pra seguirmos com o envio.
+              </p>
+              <a href={order.shipping_payment_link!} target="_blank" rel="noopener noreferrer" className="block">
+                <Button
+                  variant="accent"
+                  fullWidth
+                  leftIcon={<ExternalLink size={14} />}
+                  className="!bg-gradient-to-r !from-amber-400 !to-yellow-500 !text-dark-bg hover:!from-amber-300 hover:!to-yellow-400 uppercase tracking-wide animate-pulse-gold"
+                >
+                  Pagar o frete
+                </Button>
+              </a>
+            </>
+          )}
 
           <div className="pt-4 border-t border-dark-border space-y-3">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/15 border border-accent/40">
               <CheckCircle2 size={14} className="text-accent" />
-              <p className="text-sm font-bold text-accent uppercase tracking-wide">Já pagou? Confirme aqui</p>
+              <p className="text-sm font-bold text-accent uppercase tracking-wide">
+                {editAuthorized ? "Envie os dados corrigidos" : "Já pagou? Confirme aqui"}
+              </p>
             </div>
             <Input
               label="Nome completo (da conta Shopee)"
@@ -545,7 +610,7 @@ export function OrderDetailView({ order, cpf, whatsappNumber }: Props) {
               onClick={handleOpenShippingConfirmModal}
               disabled={!shippingFormValid}
             >
-              Enviar
+              {editAuthorized ? "Enviar correção" : "Enviar"}
             </Button>
           </div>
         </div>
@@ -685,6 +750,30 @@ export function OrderDetailView({ order, cpf, whatsappNumber }: Props) {
             <p className="text-xs text-muted">
               Confirmado por você em {formatDateTime(shippingConfirmedEntry.created_at)}
             </p>
+          )}
+
+          {/* Errou algo? Pede autorização pro admin em vez de editar direto —
+              vira uma solicitação que aparece pro admin no pedido. */}
+          {!editAuthorized && (
+            <div className="pt-2 border-t border-dark-border">
+              {editRequested ? (
+                <p className="text-xs text-muted">
+                  Pedido de correção enviado — aguarde a liberação do suporte.
+                </p>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleRequestEdit}
+                    disabled={editRequestSubmitting}
+                    className="text-xs font-semibold text-accent hover:text-accent-light transition-colors disabled:opacity-60"
+                  >
+                    {editRequestSubmitting ? "Enviando..." : "Errou algo? Solicitar edição"}
+                  </button>
+                  {editRequestError && <p className="text-xs text-danger mt-1">{editRequestError}</p>}
+                </>
+              )}
+            </div>
           )}
         </div>
       )}

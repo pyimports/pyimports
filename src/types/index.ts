@@ -539,6 +539,8 @@ export interface Order {
   shipping_label_url?: string;
   shipping_label_storage_path?: string;
   label_issued_at?: string;
+  shipping_edit_requested_at?: string;
+  shipping_edit_authorized_at?: string;
 
   // Itens
   items?: OrderItem[];

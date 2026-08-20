@@ -60,6 +60,8 @@ export interface PublicOrderDetail {
   shipping_order_id: string | null;
   shipping_label_url: string | null;
   label_issued_at: string | null;
+  shipping_edit_requested_at: string | null;
+  shipping_edit_authorized_at: string | null;
   items: PublicOrderItem[];
   status_history: OrderStatusHistory[];
 }
@@ -72,7 +74,7 @@ const ORDER_PUBLIC_FIELDS = `
   shipping_city, shipping_neighborhood, shipping_state, shipping_service,
   tracking_code, tracking_url,
   shipping_payment_link, shipping_customer_name, shipping_order_id, shipping_label_storage_path,
-  label_issued_at,
+  label_issued_at, shipping_edit_requested_at, shipping_edit_authorized_at,
   subtotal, coupon_discount, shipping_value, total,
   created_at,
   order_items ( id, product_name, product_image, quantity, unit_price_pix, subtotal, variant_color_name, variant_color_hex, variant_size ),
@@ -102,6 +104,8 @@ interface OrderPublicRow {
   shipping_label_storage_path: string | null;
   shipping_label_url?: string | null;
   label_issued_at: string | null;
+  shipping_edit_requested_at: string | null;
+  shipping_edit_authorized_at: string | null;
   subtotal: number;
   coupon_discount: number;
   shipping_value: number;
@@ -156,6 +160,8 @@ function toPublicOrderDetail(row: OrderPublicRow, shippingLinkEta: string | null
     shipping_order_id: row.shipping_order_id,
     shipping_label_url: row.shipping_label_url ?? null,
     label_issued_at: row.label_issued_at,
+    shipping_edit_requested_at: row.shipping_edit_requested_at,
+    shipping_edit_authorized_at: row.shipping_edit_authorized_at,
     items: (row.order_items ?? []).map((i) => ({
       id: i.id,
       product_name: i.product_name,

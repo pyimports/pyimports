@@ -235,3 +235,25 @@ export async function saveShippingLabel(
   revalidatePath(`/admin/pedidos/${orderId}`);
   return {};
 }
+
+// ---------------------------------------------------------------------------
+// authorizeShippingEdit
+// Cliente pediu pra corrigir nome/ID do pedido de frete que já enviou (ver
+// requestShippingEditAuthorization em lib/actions/shipping-confirmation.ts).
+// Libera UMA correção — some sozinho assim que o cliente reenvia com sucesso.
+// ---------------------------------------------------------------------------
+
+export async function authorizeShippingEdit(orderId: string): Promise<{ error?: string }> {
+  const guard = await requireAdminWrite();
+  if ("error" in guard) return guard;
+  const service = createServiceClient();
+
+  const { error: updateError } = await service
+    .from("orders")
+    .update({ shipping_edit_authorized_at: new Date().toISOString() })
+    .eq("id", orderId);
+  if (updateError) return { error: updateError.message };
+
+  revalidatePath(`/admin/pedidos/${orderId}`);
+  return {};
+}

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, MessageCircle, Package, StickyNote, Save, ShieldCheck, Copy, CheckCircle2, Truck, Zap } from "lucide-react";
+import { ArrowLeft, MessageCircle, Package, StickyNote, Save, ShieldCheck, Copy, CheckCircle2, Truck, Zap, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/common/Badge";
 import { OrderStatusSelect } from "@/components/admin/OrderStatusSelect";
 import { OrderStatusTimeline } from "@/components/public/OrderStatusTimeline";
@@ -19,6 +19,7 @@ import {
   confirmManualPayment,
   forceReleaseShippingLink,
   saveShippingLabel,
+  authorizeShippingEdit,
 } from "@/lib/actions/orders";
 import { routes } from "@/lib/routes";
 import { ORDER_STATUS_COLORS } from "@/types";
@@ -42,6 +43,7 @@ export function PedidoClient({ order }: Props) {
   const [releasingLink, setReleasingLink] = useState(false);
   const [releaseError, setReleaseError] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
+  const [authorizingEdit, setAuthorizingEdit] = useState(false);
 
   // Sem cron: o cliente pode confirmar frete/etiqueta a qualquer momento pelo
   // lado dele, e o admin não devia precisar dar F5 pra ver isso aqui. Repete
@@ -127,6 +129,15 @@ export function PedidoClient({ order }: Props) {
     navigator.clipboard.writeText(order.shipping_payment_link).catch(() => {});
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 2000);
+  };
+
+  const handleAuthorizeEdit = () => {
+    setAuthorizingEdit(true);
+    startTransition(async () => {
+      await authorizeShippingEdit(order.id);
+      setAuthorizingEdit(false);
+      router.refresh();
+    });
   };
 
   const handleLabelUploaded = (url: string, storagePath: string) => {
@@ -416,6 +427,38 @@ export function PedidoClient({ order }: Props) {
                       {shippingSummaryCopied ? "Copiado!" : "Copiar"}
                     </Button>
                   </div>
+                </div>
+              )}
+
+              {order.shipping_edit_requested_at && !order.shipping_edit_authorized_at && (
+                <div className="mt-3 pt-3 border-t border-dark-border">
+                  <div className="flex items-start gap-2 p-3 bg-warning/5 border border-warning/20 rounded-xl">
+                    <AlertTriangle size={15} className="text-warning flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <p className="text-xs text-warning/90">
+                        Cliente pediu pra corrigir esses dados em{" "}
+                        {formatDateTime(order.shipping_edit_requested_at)}.
+                      </p>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        fullWidth
+                        onClick={handleAuthorizeEdit}
+                        isLoading={authorizingEdit}
+                      >
+                        Autorizar edição
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {order.shipping_edit_authorized_at && (
+                <div className="mt-3 pt-3 border-t border-dark-border">
+                  <p className="text-xs text-muted">
+                    Edição autorizada em {formatDateTime(order.shipping_edit_authorized_at)} — aguardando o
+                    cliente reenviar os dados corrigidos.
+                  </p>
                 </div>
               )}
 

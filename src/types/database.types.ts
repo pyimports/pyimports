@@ -589,6 +589,8 @@ export type Database = {
           shipping_label_url:         string | null;
           shipping_label_storage_path: string | null;
           label_issued_at:            string | null;
+          shipping_edit_requested_at: string | null;
+          shipping_edit_authorized_at: string | null;
           notes:                 string | null;
           internal_notes:        string | null;
           created_at:            string;
@@ -629,6 +631,8 @@ export type Database = {
           shipping_label_url?:         string | null;
           shipping_label_storage_path?: string | null;
           label_issued_at?:            string | null;
+          shipping_edit_requested_at?: string | null;
+          shipping_edit_authorized_at?: string | null;
           notes?:                 string | null;
           internal_notes?:        string | null;
           created_at?:            string;
