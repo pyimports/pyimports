@@ -1,5 +1,7 @@
-import React from "react";
-import { CheckCircle2, Circle, Loader2 } from "lucide-react";
+"use client";
+
+import React, { useState } from "react";
+import { CheckCircle2, Circle, Loader2, ChevronDown } from "lucide-react";
 import type { OrderStatus, OrderStatusHistory } from "@/types";
 import { ORDER_STATUS_LABELS } from "@/types";
 import { formatDateTime } from "@/lib/formatters";
@@ -22,6 +24,10 @@ export const OrderStatusTimeline = ({
   currentStatus,
   history = [],
 }: OrderStatusTimelineProps) => {
+  // Precisa vir antes do return antecipado de "cancelado" — hooks não podem
+  // ser condicionais.
+  const [expanded, setExpanded] = useState(false);
+
   if (currentStatus === "cancelled") {
     return (
       <div className="flex items-center gap-3 p-4 bg-danger-bg border border-danger/20 rounded-xl">
@@ -46,9 +52,38 @@ export const OrderStatusTimeline = ({
   // o "último passo concluído" é o próprio currentIndex, exceto nesse caso.
   const lastCompletedIndex = currentStatus === "pending_payment" ? currentIndex - 1 : currentIndex;
 
+  // Passos já concluídos e antigos ficam escondidos por padrão — só o passo
+  // atual em diante aparece de cara, pra não poluir a tela com histórico que
+  // o cliente já sabe. O cliente pode abrir e ver tudo se quiser.
+  const collapseFromIndex = Math.max(0, lastCompletedIndex);
+  const hiddenCount = expanded ? 0 : collapseFromIndex;
+
   return (
     <div className="space-y-0">
+      {hiddenCount > 0 && (
+        <button
+          onClick={() => setExpanded(true)}
+          className="flex items-center gap-2 mb-3 text-xs font-semibold text-muted hover:text-accent transition-colors"
+        >
+          <span className="w-7 h-7 rounded-full border-2 border-dark-border-light bg-dark-alt flex items-center justify-center flex-shrink-0 text-sm tracking-tighter leading-none">
+            •••
+          </span>
+          Ver {hiddenCount} {hiddenCount === 1 ? "passo anterior" : "passos anteriores"}
+        </button>
+      )}
+
+      {expanded && (
+        <button
+          onClick={() => setExpanded(false)}
+          className="flex items-center gap-1.5 mb-3 text-xs font-semibold text-muted hover:text-accent transition-colors"
+        >
+          Ocultar passos anteriores
+          <ChevronDown size={14} className="rotate-180" />
+        </button>
+      )}
+
       {STATUS_ORDER.map((status, i) => {
+        if (i < hiddenCount) return null;
         // Cada label da timeline (exceto "Aguardando pagamento") descreve um
         // evento que já aconteceu ("Envio pago", "Etiqueta emitida"...), não
         // algo em progresso — então o passo atual conta como concluído
