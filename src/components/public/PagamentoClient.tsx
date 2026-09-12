@@ -1,22 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Script from "next/script";
+import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
-import { Copy, CheckCircle2, MessageCircle, Clock, Loader2, ExternalLink, ShieldCheck, CreditCard, AlertCircle } from "lucide-react";
+import { Copy, CheckCircle2, MessageCircle, Clock, Loader2, ExternalLink, ShieldCheck, AlertCircle } from "lucide-react";
 import { CheckoutSteps } from "@/components/public/CheckoutSteps";
 import { Container } from "@/components/common/SectionHeader";
 import { Button } from "@/components/common/Button";
-import { Input } from "@/components/common/Input";
-import { Select } from "@/components/common/Select";
 import { routes } from "@/lib/routes";
 import { formatCurrency } from "@/lib/formatters";
 import { generateStoreWhatsAppLink } from "@/lib/whatsapp";
-import { maskCpf, maskCep } from "@/lib/utils";
-import { payWithCardPyxgate } from "@/lib/actions/pyxgate-card-payment";
 import { PAYMENT_MODE } from "@/lib/payments/mode";
-import { computeCardTotalForInstallments, MAX_CARD_INSTALLMENTS } from "@/lib/pricing";
 
 interface PagamentoClientProps {
   orderId: string;
@@ -28,65 +22,7 @@ interface PagamentoClientProps {
   expiresAt: string | null;
   isStub: boolean;
   whatsappNumber: string;
-  clientIp?: string;
-  customerEmail: string;
 }
-
-declare global {
-  interface Window {
-    ZendrySDKThreeds?: {
-      init_threeds: (input: {
-        token: string;
-        amount: number;
-        payment_form: {
-          network_preference: string;
-          account_type: string;
-          pan: string;
-          expiry_month: string;
-          expiry_year: string;
-          card_holder_name: string;
-          installment_number: number;
-          issuer_installment: boolean;
-        };
-      }) => Promise<{
-        success: boolean;
-        three_ds_data?: {
-          operation_session_id: string;
-          cavv: string;
-          xid: string;
-          eci: string;
-          secure_version: string;
-          directory_server_transaction_id: string;
-          three_ds_server_transaction_id: string;
-        };
-      }>;
-    };
-  }
-}
-
-function maskCardNumber(value: string): string {
-  return value.replace(/\D/g, "").slice(0, 19).replace(/(\d{4})(?=\d)/g, "$1 ").trim();
-}
-
-function maskExpiry(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 4);
-  return digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
-}
-
-const CARD_BRAND_OPTIONS = [
-  { value: "VISA", label: "Visa" },
-  { value: "MASTERCARD", label: "Mastercard" },
-  { value: "ELO", label: "Elo" },
-  { value: "AMEX", label: "American Express" },
-];
-
-// 3DS é obrigatório na Zendry (confirmado testando de verdade) — o desafio
-// roda no navegador via ZendrySDKThreeds.init_threeds() antes de submeter o
-// pagamento. O token usado nesse SDK é o mesmo Bearer secreto do backend
-// (confirmado com o suporte da Zendry) e não pode ser restringido por
-// whitelist de IP nesse fluxo específico — exposição de risco aceita
-// conscientemente pelo dono da loja. Ver src/lib/payments/mode.ts.
-const CARD_PAYMENT_ENABLED = true;
 
 export function PagamentoClient({
   orderId,
@@ -98,28 +34,13 @@ export function PagamentoClient({
   expiresAt,
   isStub,
   whatsappNumber,
-  clientIp,
-  customerEmail,
 }: PagamentoClientProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [copied, setCopied] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [confirmError, setConfirmError] = useState("");
 
-  // Reflete a escolha feita no checkout (?method=pix|card) — se o cliente já
-  // escolheu lá, a tela de pagamento abre só naquela opção, sem mostrar a
-  // outra (evita confundir quem já decidiu Pix e vê Cartão do lado, e
-  // vice-versa). Só mostra as duas abas quando não veio nenhuma escolha
-  // prévia (link antigo, acesso direto à URL).
-  const chosenMethod = searchParams.get("method") === "card" ? "card" : searchParams.get("method") === "pix" ? "pix" : null;
-  const [activeTab, setActiveTab] = useState<"pix" | "card">(chosenMethod === "card" ? "card" : "pix");
-  // Mostra a seção de pagamento embutido (Pix ou cartão) sempre que já
-  // temos um QR/código Pix pronto OU o cliente escolheu cartão no checkout
-  // — pedido em cartão nunca tem pixCode/pixQrUrl (não criamos mais a
-  // cobrança Pix nesse caso), então sem o "|| chosenMethod === card" a tela
-  // caía direto no fallback de checkout externo em vez do formulário de cartão.
-  const showEmbeddedPayment = !!(pixQrUrl || pixCode) || chosenMethod === "card";
+  const showEmbeddedPayment = !!(pixQrUrl || pixCode);
 
   const initialSeconds = expiresAt
     ? Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000))
@@ -139,8 +60,8 @@ export function PagamentoClient({
   // não confirma — detecta o pagamento sem depender só do webhook chegar
   // (motivo: um pedido real ficou preso "pendente" com o webhook nunca
   // entregue, mesmo o gateway já tendo confirmado o pagamento de verdade).
-  // Roda em paralelo com qualquer tab ativa (Pix ou Cartão), porque o
-  // cliente pode ter pago por fora do fluxo que está olhando na tela.
+  // Roda mesmo com o QR code na tela, porque o cliente pode ter pago por
+  // fora do fluxo que está olhando (ex: já escaneou antes da página carregar).
   const [paymentFailed, setPaymentFailed] = useState(false);
 
   useEffect(() => {
@@ -203,186 +124,6 @@ export function PagamentoClient({
     }
   };
 
-  // ── Formulário de cartão ──────────────────────────────────────────────
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardExpiry, setCardExpiry] = useState("");
-  const [cardCvv, setCardCvv] = useState("");
-  const [cardHolderName, setCardHolderName] = useState("");
-  const [cardHolderDocument, setCardHolderDocument] = useState("");
-  const [cardBrand, setCardBrand] = useState("VISA");
-  const [cardBillingZip, setCardBillingZip] = useState("");
-  const [cardStreet, setCardStreet] = useState("");
-  const [cardAddressNumber, setCardAddressNumber] = useState("");
-  const [cardComplement, setCardComplement] = useState("");
-  const [cardNeighborhood, setCardNeighborhood] = useState("");
-  const [cardCity, setCardCity] = useState("");
-  const [cardState, setCardState] = useState("");
-  const [cepLoading, setCepLoading] = useState(false);
-  const [cepError, setCepError] = useState("");
-  const [cepFound, setCepFound] = useState(false);
-  const [installments, setInstallments] = useState("1");
-  const [cardSubmitting, setCardSubmitting] = useState(false);
-  const [cardStep, setCardStep] = useState<"idle" | "3ds" | "paying">("idle");
-  const [cardError, setCardError] = useState("");
-
-  // Autocompleta rua/bairro/cidade/estado assim que o CEP fica completo —
-  // o cliente só precisa digitar número e complemento. ViaCEP é público,
-  // sem chave, e aceita chamada direto do navegador (CORS liberado).
-  useEffect(() => {
-    const digits = cardBillingZip.replace(/\D/g, "");
-    setCepFound(false);
-    if (digits.length !== 8) {
-      setCepError("");
-      return;
-    }
-
-    let cancelled = false;
-    setCepLoading(true);
-    setCepError("");
-
-    fetch(`https://viacep.com.br/ws/${digits}/json/`)
-      .then((res) => res.json())
-      .then((data: { erro?: boolean; logradouro?: string; bairro?: string; localidade?: string; uf?: string }) => {
-        if (cancelled) return;
-        if (data.erro) {
-          setCepError("CEP não encontrado.");
-          setCardStreet("");
-          setCardNeighborhood("");
-          setCardCity("");
-          setCardState("");
-          return;
-        }
-        setCardStreet(data.logradouro ?? "");
-        setCardNeighborhood(data.bairro ?? "");
-        setCardCity(data.localidade ?? "");
-        setCardState(data.uf ?? "");
-        setCepFound(true);
-      })
-      .catch(() => {
-        if (!cancelled) setCepError("Não foi possível buscar o CEP. Confira o número digitado.");
-      })
-      .finally(() => {
-        if (!cancelled) setCepLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [cardBillingZip]);
-
-  // Total real no cartão pra quantidade de parcelas escolhida — taxa da
-  // adquirente sobe conforme parcela (ver src/lib/pricing.ts). Recalculado
-  // de novo no servidor antes de cobrar (card-payment.ts nunca confia nisso).
-  const cardTotal = computeCardTotalForInstallments(total, Number(installments));
-  const installmentOptions = Array.from({ length: MAX_CARD_INSTALLMENTS }, (_, i) => {
-    const n = i + 1;
-    const totalForN = computeCardTotalForInstallments(total, n);
-    return {
-      value: String(n),
-      label: n === 1
-        ? `À vista — ${formatCurrency(totalForN)}`
-        : `${n}x de ${formatCurrency(totalForN / n)} (${formatCurrency(totalForN)})`,
-    };
-  });
-
-  const handlePayWithCard = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setCardError("");
-    setCardSubmitting(true);
-
-    const [mm, yy] = cardExpiry.split("/");
-    if (!mm || yy?.length !== 2) {
-      setCardError("Validade do cartão inválida.");
-      setCardSubmitting(false);
-      return;
-    }
-
-    try {
-      setCardStep("3ds");
-
-      const tokenRes = await fetch("/api/payments/pyxgate-3ds-token");
-      const tokenJson = (await tokenRes.json()) as { token?: string };
-      if (!tokenRes.ok || !tokenJson.token) {
-        setCardError("Erro ao iniciar a autenticação de segurança do cartão. Tente novamente.");
-        setCardSubmitting(false);
-        setCardStep("idle");
-        return;
-      }
-
-      if (!window.ZendrySDKThreeds) {
-        setCardError("Autenticação de segurança do cartão ainda está carregando. Aguarde alguns segundos e tente de novo.");
-        setCardSubmitting(false);
-        setCardStep("idle");
-        return;
-      }
-
-      const threedsResult = await window.ZendrySDKThreeds.init_threeds({
-        token: tokenJson.token,
-        amount: Math.round(cardTotal * 100),
-        payment_form: {
-          network_preference: cardBrand,
-          account_type: "CREDIT",
-          pan: cardNumber.replace(/\D/g, ""),
-          expiry_month: mm,
-          expiry_year: yy,
-          card_holder_name: cardHolderName.trim(),
-          installment_number: Number(installments),
-          issuer_installment: false,
-        },
-      });
-
-      if (!threedsResult?.success || !threedsResult.three_ds_data) {
-        setCardError("Não foi possível concluir a autenticação de segurança do cartão. Tente novamente ou use outro cartão.");
-        setCardSubmitting(false);
-        setCardStep("idle");
-        return;
-      }
-
-      const t = threedsResult.three_ds_data;
-      setCardStep("paying");
-
-      const result = await payWithCardPyxgate({
-        orderId,
-        cardNumber,
-        cardExpirationDate: `${mm}20${yy}`,
-        cardSecurityCode: cardCvv,
-        cardHolderName,
-        cardHolderDocument,
-        customerEmail,
-        installments: Number(installments),
-        threedsData: {
-          operation_session_id: t.operation_session_id,
-          cavv: t.cavv,
-          xid: t.xid,
-          eci: t.eci,
-          secure_version: t.secure_version,
-          directory_server_transaction_id: t.directory_server_transaction_id,
-          three_ds_server_transaction_id: t.three_ds_server_transaction_id,
-          ip_address: clientIp ?? "",
-          user_agent_browser_value: navigator.userAgent,
-          http_browser_language: navigator.language,
-          http_browser_screen_height: String(window.screen.height),
-          http_browser_screen_width: String(window.screen.width),
-          zip_code: cardBillingZip.replace(/\D/g, ""),
-        },
-      });
-
-      setCardSubmitting(false);
-      setCardStep("idle");
-
-      if ("error" in result) {
-        setCardError(result.error);
-        return;
-      }
-
-      router.push(routes.pedidoConfirmado(orderId));
-    } catch {
-      setCardError("Erro ao processar pagamento com cartão. Tente novamente.");
-      setCardSubmitting(false);
-      setCardStep("idle");
-    }
-  };
-
   // ── Modo manual: sem gateway embutido — o link de pagamento é enviado à
   // parte pelo WhatsApp e a confirmação é manual (ver PAYMENT_MODE). ────────
   if (PAYMENT_MODE === "manual") {
@@ -408,7 +149,7 @@ export function PagamentoClient({
               <MessageCircle size={28} className="text-whatsapp" />
             </div>
             <p className="relative text-sm text-muted max-w-sm">
-              Nossa equipe vai te chamar no WhatsApp em instantes com o link de pagamento (Pix ou cartão).
+              Nossa equipe vai te chamar no WhatsApp em instantes com o link de pagamento (Pix).
             </p>
             <a
               href={generateStoreWhatsAppLink(whatsappNumber, whatsappMessage)}
@@ -452,9 +193,6 @@ export function PagamentoClient({
 
   return (
     <div className="py-12">
-      {CARD_PAYMENT_ENABLED && (
-        <Script src="https://cdn.zendry.com/v1/zendry-sdk-threeds.min.js" strategy="afterInteractive" />
-      )}
       <Container size="sm">
         <div className="mb-8">
           <CheckoutSteps currentStep={3} />
@@ -486,220 +224,78 @@ export function PagamentoClient({
 
         {showEmbeddedPayment ? (
           <>
-            {/* Seletor Pix / Cartão — só aparece se o cliente não escolheu
-                ainda no checkout (link antigo/acesso direto) */}
-            {CARD_PAYMENT_ENABLED && !chosenMethod && (
-              <div className="flex gap-2 bg-dark-alt rounded-xl p-1 mb-6">
-                <button
-                  onClick={() => setActiveTab("pix")}
-                  className={[
-                    "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all",
-                    activeTab === "pix" ? "bg-dark-surface text-dark-text shadow-sm" : "text-muted hover:text-dark-text",
-                  ].join(" ")}
-                >
-                  Pix
-                </button>
-                <button
-                  onClick={() => setActiveTab("card")}
-                  className={[
-                    "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all",
-                    activeTab === "card" ? "bg-dark-surface text-dark-text shadow-sm" : "text-muted hover:text-dark-text",
-                  ].join(" ")}
-                >
-                  <CreditCard size={15} />
-                  Cartão
-                </button>
+            {/* QR Code */}
+            {(pixCode || pixQrUrl) && (
+              <div className="relative flex flex-col items-center gap-6 p-8 bg-dark-surface rounded-3xl border border-dark-border mb-6 overflow-hidden">
+                {/* glow decorativo */}
+                <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-72 h-72 rounded-full bg-accent/20 blur-3xl" />
+
+                <div className="relative p-5 rounded-3xl bg-gradient-to-br from-accent to-accent-light shadow-[0_8px_30px_-4px_rgba(59,130,246,0.45)]">
+                  <div className="relative p-4 bg-white rounded-2xl">
+                    {pixCode ? (
+                      <>
+                        <QRCodeSVG
+                          value={pixCode}
+                          size={280}
+                          level="H"
+                          fgColor="#0f172a"
+                          bgColor="#ffffff"
+                        />
+                        {/* Badge central azul claro com a logo PY de
+                            fundo transparente por cima — em vez do
+                            quadrado branco que o excavate da lib deixava.
+                            O nível de correção "H" já tolera esse tanto
+                            de área coberta sem quebrar a leitura. */}
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div className="w-16 h-16 rounded-xl bg-accent-light flex items-center justify-center shadow-md">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src="/py-logo-transparent.png" alt="" className="w-11 h-11 object-contain" />
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={pixQrUrl ?? undefined} alt="QR Code Pix" className="w-[280px] h-[280px] object-contain" />
+                    )}
+                  </div>
+                </div>
+
+                <p className="relative text-sm text-muted text-center">Escaneie o QR Code com o app do seu banco</p>
               </div>
             )}
 
-            {activeTab === "pix" || !CARD_PAYMENT_ENABLED ? (
-              <>
-                {/* QR Code */}
-                {(pixCode || pixQrUrl) && (
-                  <div className="relative flex flex-col items-center gap-6 p-8 bg-dark-surface rounded-3xl border border-dark-border mb-6 overflow-hidden">
-                    {/* glow decorativo */}
-                    <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-72 h-72 rounded-full bg-accent/20 blur-3xl" />
-
-                    <div className="relative p-5 rounded-3xl bg-gradient-to-br from-accent to-accent-light shadow-[0_8px_30px_-4px_rgba(59,130,246,0.45)]">
-                      <div className="relative p-4 bg-white rounded-2xl">
-                        {pixCode ? (
-                          <>
-                            <QRCodeSVG
-                              value={pixCode}
-                              size={280}
-                              level="H"
-                              fgColor="#0f172a"
-                              bgColor="#ffffff"
-                            />
-                            {/* Badge central azul claro com a logo PY de
-                                fundo transparente por cima — em vez do
-                                quadrado branco que o excavate da lib deixava.
-                                O nível de correção "H" já tolera esse tanto
-                                de área coberta sem quebrar a leitura. */}
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                              <div className="w-16 h-16 rounded-xl bg-accent-light flex items-center justify-center shadow-md">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src="/py-logo-transparent.png" alt="" className="w-11 h-11 object-contain" />
-                              </div>
-                            </div>
-                          </>
-                        ) : (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={pixQrUrl ?? undefined} alt="QR Code Pix" className="w-[280px] h-[280px] object-contain" />
-                        )}
-                      </div>
-                    </div>
-
-                    <p className="relative text-sm text-muted text-center">Escaneie o QR Code com o app do seu banco</p>
-                  </div>
-                )}
-
-                {/* Código Pix */}
-                {pixCode && (
-                  <div className="space-y-3 mb-8">
-                    <p className="text-sm font-medium text-dark-text">Ou copie o código:</p>
-                    <div className="flex gap-2">
-                      <code className="flex-1 bg-dark-alt rounded-xl px-3 py-2.5 text-xs text-muted font-mono truncate border border-dark-border">
-                        {pixCode}
-                      </code>
-                      <Button variant="accent" size="sm" onClick={handleCopy} leftIcon={copied ? <CheckCircle2 size={14} /> : <Copy size={14} />}>
-                        {copied ? "Copiado!" : "Copiar"}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Instructions */}
-                <div className="bg-dark-surface rounded-2xl border border-dark-border p-5 space-y-3 mb-6">
-                  <h3 className="text-sm font-bold text-dark-text">Como pagar:</h3>
-                  {[
-                    "Abra o app do seu banco",
-                    "Escaneie o QR Code ou cole o código copiado",
-                    "Confirme o pagamento",
-                    "Aguarde a confirmação do pagamento",
-                  ].map((step, i) => (
-                    <div key={i} className="flex items-center gap-3 text-sm text-muted">
-                      <div className="w-5 h-5 bg-accent/10 text-accent rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold">
-                        {i + 1}
-                      </div>
-                      {step}
-                    </div>
-                  ))}
+            {/* Código Pix */}
+            {pixCode && (
+              <div className="space-y-3 mb-8">
+                <p className="text-sm font-medium text-dark-text">Ou copie o código:</p>
+                <div className="flex gap-2">
+                  <code className="flex-1 bg-dark-alt rounded-xl px-3 py-2.5 text-xs text-muted font-mono truncate border border-dark-border">
+                    {pixCode}
+                  </code>
+                  <Button variant="accent" size="sm" onClick={handleCopy} leftIcon={copied ? <CheckCircle2 size={14} /> : <Copy size={14} />}>
+                    {copied ? "Copiado!" : "Copiar"}
+                  </Button>
                 </div>
-              </>
-            ) : (
-              <form onSubmit={handlePayWithCard} className="bg-dark-surface rounded-2xl border border-dark-border p-5 space-y-4 mb-6">
-                <div className="flex items-center gap-2 text-xs text-muted">
-                  <ShieldCheck size={14} className="text-accent" />
-                  Pagamento processado com segurança
-                </div>
-                <Input
-                  label="Número do cartão"
-                  value={cardNumber}
-                  onChange={(e) => setCardNumber(maskCardNumber(e.target.value))}
-                  placeholder="0000 0000 0000 0000"
-                  inputMode="numeric"
-                  required
-                />
-                <div className="grid grid-cols-2 gap-3">
-                  <Input
-                    label="Validade (MM/AA)"
-                    value={cardExpiry}
-                    onChange={(e) => setCardExpiry(maskExpiry(e.target.value))}
-                    placeholder="MM/AA"
-                    inputMode="numeric"
-                    maxLength={5}
-                    required
-                  />
-                  <Input
-                    label="CVV"
-                    value={cardCvv}
-                    onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                    placeholder="000"
-                    inputMode="numeric"
-                    maxLength={4}
-                    required
-                  />
-                </div>
-                <Input
-                  label="Nome impresso no cartão"
-                  value={cardHolderName}
-                  onChange={(e) => setCardHolderName(e.target.value.toUpperCase())}
-                  placeholder="Como está no cartão"
-                  required
-                />
-                <Input
-                  label="CPF do titular do cartão"
-                  value={cardHolderDocument}
-                  onChange={(e) => setCardHolderDocument(maskCpf(e.target.value))}
-                  placeholder="000.000.000-00"
-                  maxLength={14}
-                  required
-                />
-                <div className="grid grid-cols-2 gap-3">
-                  <Select
-                    label="Bandeira"
-                    value={cardBrand}
-                    onChange={setCardBrand}
-                    options={CARD_BRAND_OPTIONS}
-                  />
-                  <Input
-                    label="CEP de cobrança"
-                    value={cardBillingZip}
-                    onChange={(e) => setCardBillingZip(maskCep(e.target.value))}
-                    placeholder="00000-000"
-                    inputMode="numeric"
-                    maxLength={9}
-                    required
-                    helper={cepLoading ? "Buscando endereço..." : undefined}
-                    error={cepError}
-                  />
-                </div>
-                {cepFound && (
-                  <>
-                    <Input
-                      label="Endereço"
-                      value={cardStreet}
-                      readOnly
-                      placeholder="Rua/Avenida"
-                      required
-                    />
-                    <div className="grid grid-cols-2 gap-3">
-                      <Input
-                        label="Número"
-                        value={cardAddressNumber}
-                        onChange={(e) => setCardAddressNumber(e.target.value)}
-                        placeholder="Nº"
-                        required
-                      />
-                      <Input
-                        label="Complemento"
-                        value={cardComplement}
-                        onChange={(e) => setCardComplement(e.target.value)}
-                        placeholder="Apto, bloco... (opcional)"
-                      />
-                    </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      <Input label="Bairro" value={cardNeighborhood} readOnly required />
-                      <Input label="Cidade" value={cardCity} readOnly required />
-                      <Input label="Estado" value={cardState} readOnly required />
-                    </div>
-                  </>
-                )}
-                <Select
-                  label="Parcelas"
-                  value={installments}
-                  onChange={setInstallments}
-                  options={installmentOptions}
-                />
-
-                {cardError && <p className="text-sm text-danger">{cardError}</p>}
-
-                <Button type="submit" variant="accent" fullWidth size="lg" isLoading={cardSubmitting}>
-                  {cardStep === "3ds" ? "Confirmando segurança do cartão..." : cardStep === "paying" ? "Processando pagamento..." : `Pagar ${formatCurrency(cardTotal)}`}
-                </Button>
-              </form>
+              </div>
             )}
+
+            {/* Instructions */}
+            <div className="bg-dark-surface rounded-2xl border border-dark-border p-5 space-y-3 mb-6">
+              <h3 className="text-sm font-bold text-dark-text">Como pagar:</h3>
+              {[
+                "Abra o app do seu banco",
+                "Escaneie o QR Code ou cole o código copiado",
+                "Confirme o pagamento",
+                "Aguarde a confirmação do pagamento",
+              ].map((step, i) => (
+                <div key={i} className="flex items-center gap-3 text-sm text-muted">
+                  <div className="w-5 h-5 bg-accent/10 text-accent rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                    {i + 1}
+                  </div>
+                  {step}
+                </div>
+              ))}
+            </div>
           </>
         ) : (
           checkoutUrl && (
@@ -708,7 +304,7 @@ export function PagamentoClient({
                 <ShieldCheck size={28} className="text-accent" />
               </div>
               <p className="text-sm text-muted text-center max-w-sm">
-                Você será levado a uma página segura para escolher entre Pix ou cartão e concluir o pagamento.
+                Você será levado a uma página segura para concluir o pagamento via Pix.
               </p>
               <a href={checkoutUrl} target="_blank" rel="noopener noreferrer" className="w-full">
                 <Button variant="accent" fullWidth size="lg" leftIcon={<ExternalLink size={16} />}>

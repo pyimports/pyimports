@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, QrCode, CreditCard } from "lucide-react";
+import { AlertCircle, QrCode } from "lucide-react";
 import { CheckoutSteps } from "@/components/public/CheckoutSteps";
 import { Container } from "@/components/common/SectionHeader";
 import { Button } from "@/components/common/Button";
@@ -31,7 +31,11 @@ export default function CheckoutPage() {
   const [email,        setEmail]        = useState("");
   const [phone,        setPhone]        = useState("");
   const [cpf,          setCpf]          = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"pix" | "card" | "">("");
+  // Único método aceito hoje é Pix (SupraPay não processa cartão) — sem
+  // seletor na tela, mas o campo se mantém pra não mudar o contrato do
+  // createOrder/PaymentMethod usado no resto do app (histórico de pedidos
+  // em cartão continua existindo).
+  const paymentMethod = "pix" as const;
 
   const [submitting,   setSubmitting]   = useState(false);
   const [submitError,  setSubmitError]  = useState("");
@@ -48,7 +52,6 @@ export default function CheckoutPage() {
     isValidCpf(cpf) &&
     !!email.trim() &&
     !!phone.trim() &&
-    paymentMethod !== "" &&
     items.length > 0;
 
   const handleSubmit = async () => {
@@ -61,7 +64,6 @@ export default function CheckoutPage() {
     if (!isValidCpf(cpf))     { setSubmitError("CPF inválido.");              return; }
     if (!email.trim())        { setSubmitError("E-mail é obrigatório.");      return; }
     if (!phone.trim())        { setSubmitError("Telefone é obrigatório.");    return; }
-    if (!paymentMethod)       { setSubmitError("Escolha a forma de pagamento."); return; }
     if (items.length === 0)   { setSubmitError("Seu carrinho está vazio.");   return; }
 
     setSubmitting(true);
@@ -119,42 +121,13 @@ export default function CheckoutPage() {
 
             {/* Payment method */}
             <div className="bg-dark-surface rounded-2xl border border-dark-border p-6 space-y-3">
-              <h2 className="text-base font-bold text-dark-text">
-                Forma de pagamento <span className="text-danger">*</span>
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod("pix")}
-                  className={[
-                    "flex items-center gap-3 p-4 rounded-xl border text-left transition-all",
-                    paymentMethod === "pix"
-                      ? "border-accent bg-accent/10"
-                      : "border-dark-border hover:border-accent/40",
-                  ].join(" ")}
-                >
-                  <QrCode size={20} className={paymentMethod === "pix" ? "text-accent" : "text-muted"} />
-                  <div>
-                    <p className="text-sm font-semibold text-dark-text">Pix</p>
-                    <p className="text-xs text-muted">Aprovação automática</p>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod("card")}
-                  className={[
-                    "flex items-center gap-3 p-4 rounded-xl border text-left transition-all",
-                    paymentMethod === "card"
-                      ? "border-accent bg-accent/10"
-                      : "border-dark-border hover:border-accent/40",
-                  ].join(" ")}
-                >
-                  <CreditCard size={20} className={paymentMethod === "card" ? "text-accent" : "text-muted"} />
-                  <div>
-                    <p className="text-sm font-semibold text-dark-text">Cartão de crédito</p>
-                    <p className="text-xs text-muted">Em até 14x, sem sair do site</p>
-                  </div>
-                </button>
+              <h2 className="text-base font-bold text-dark-text">Forma de pagamento</h2>
+              <div className="flex items-center gap-3 p-4 rounded-xl border border-accent bg-accent/10">
+                <QrCode size={20} className="text-accent" />
+                <div>
+                  <p className="text-sm font-semibold text-dark-text">Pix</p>
+                  <p className="text-xs text-muted">Aprovação automática</p>
+                </div>
               </div>
             </div>
 

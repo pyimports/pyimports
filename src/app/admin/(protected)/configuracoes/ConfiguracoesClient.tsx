@@ -228,15 +228,14 @@ export function ConfiguracoesClient({ initialSettings, initialAdmins, currentAdm
 
         <TabContent value="pagamentos" active={activeTab}>
           <div className="space-y-4 mt-6">
-            <SectionCard title="Pagamento — Pix (SupraPay) + Cartão (Zendry)">
+            <SectionCard title="Pagamento — Pix (SupraPay)">
               <p className="text-sm text-muted leading-relaxed">
                 O checkout gera automaticamente um QR Code Pix embutido na própria página, via
-                SupraPay. Pagamento por cartão continua embutido também, processado pelo Zendry
-                (com 3DS). O cliente escolhe Pix ou cartão na tela de pagamento do pedido. Não há
-                configuração manual de chave Pix ou cartão nesta tela.
+                SupraPay. Não vendemos mais no cartão de crédito. Não há configuração manual de
+                chave Pix nesta tela.
               </p>
               <p className="text-xs text-muted">
-                As credenciais de integração (SupraPay e Zendry) ficam nas variáveis de ambiente do servidor, não aqui.
+                As credenciais de integração (SupraPay) ficam nas variáveis de ambiente do servidor, não aqui.
               </p>
             </SectionCard>
           </div>

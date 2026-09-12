@@ -7,15 +7,15 @@ import { processPaymentResult } from "@/lib/payments/process";
 //
 // Consultado por polling do lado do cliente (PagamentoClient.tsx) enquanto o
 // cliente está na tela de pagamento — detecta confirmação sem depender só
-// do webhook chegar (motivo: um pedido real ficou preso "pendente" porque o
-// webhook da Zendry nunca chegou, mesmo o pagamento tendo sido confirmado
-// do lado do gateway). Nunca expõe a chave secreta do gateway pro navegador
-// — a consulta acontece aqui, no servidor; o cliente só recebe o status.
+// do webhook chegar (motivo: um pedido real ficou preso "pendente" porque um
+// webhook nunca chegou, mesmo o pagamento tendo sido confirmado do lado do
+// gateway). Nunca expõe a chave secreta do gateway pro navegador — a
+// consulta acontece aqui, no servidor; o cliente só recebe o status.
 //
 // Usa getPaymentProvider() (a mesma fábrica usada em todo o resto da camada
 // de pagamentos) em vez de falar direto com um gateway específico — funciona
-// com qualquer provider ativo (PYX Gate hoje, Zendry se um dia voltar a ser
-// o rollback ativo) sem precisar de rota dedicada por gateway.
+// com qualquer provider ativo (SupraPay hoje) sem precisar de rota dedicada
+// por gateway.
 export async function GET(request: NextRequest) {
   const orderId = request.nextUrl.searchParams.get("orderId");
   if (!orderId) {
