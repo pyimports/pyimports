@@ -45,20 +45,14 @@ export default function CheckoutPage() {
   const insurance = getInsuranceValue();
   const total     = getTotalPix();
 
-  // Botão "Finalizar pedido" só libera com tudo preenchido — nada de
-  // deixar clicar e só mostrar erro depois.
-  const isFormValid =
-    !!name.trim() &&
-    isValidCpf(cpf) &&
-    !!email.trim() &&
-    !!phone.trim() &&
-    items.length > 0;
-
   const handleSubmit = async () => {
     setSubmitError("");
 
-    // Validação server-side já cobre tudo isso de novo — esta é só a
-    // camada rápida do client, o botão já vem desabilitado sem isFormValid.
+    // O botão fica sempre clicável — quem avisa o que está errado é essa
+    // validação aqui (setSubmitError), não um `disabled` calado no botão.
+    // Um `disabled={!isFormValid}` já existiu aqui e escondia essas mesmas
+    // mensagens: com CPF inválido o clique nem chegava a acontecer, então o
+    // cliente via só um botão travado sem explicação nenhuma.
     if (!name.trim())         { setSubmitError("Nome é obrigatório.");        return; }
     if (!cpf.trim())          { setSubmitError("CPF é obrigatório.");         return; }
     if (!isValidCpf(cpf))     { setSubmitError("CPF inválido.");              return; }
@@ -178,7 +172,7 @@ export default function CheckoutPage() {
                 fullWidth
                 size="lg"
                 isLoading={submitting}
-                disabled={!isFormValid}
+                disabled={submitting}
                 onClick={handleSubmit}
               >
                 Finalizar pedido
