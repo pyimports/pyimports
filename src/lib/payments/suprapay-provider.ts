@@ -30,7 +30,12 @@ function getCredentials(): { apiKey: string; apiSecret: string } {
   return { apiKey, apiSecret };
 }
 
-export async function suprapayFetch<T>(
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Uma tentativa de request — assina do zero (timestamp/nonce novos) a cada
+// chamada, porque nonce é anti-replay: reenviar os mesmos bytes de uma
+// tentativa anterior arrisca 409 replay_detected na retentativa.
+async function suprapayRequest<T>(
   path: string,
   init: { method: "GET" | "POST"; body?: unknown; idempotencyKey?: string }
 ): Promise<T> {
@@ -74,10 +79,42 @@ export async function suprapayFetch<T>(
     } catch {
       // corpo não veio como JSON — mantém a mensagem genérica
     }
-    throw new Error(message);
+    const error = new Error(message) as Error & { status?: number };
+    error.status = res.status;
+    throw error;
   }
 
   return res.json() as Promise<T>;
+}
+
+// A doc da SupraPay documenta 500 internal_error como "retente com backoff" —
+// e falhas de rede (timeout, conexão caída) contam como indeterminadas, não
+// como recusa. Retry é seguro aqui porque toda chamada que precisa (criar
+// cobrança) já leva Idempotency-Key = orderId: reenviar o mesmo pedido
+// reaproveita a cobrança original em vez de duplicar. Só retenta erro de
+// servidor (5xx) ou falha de rede — erro do cliente (4xx: validação,
+// assinatura, etc.) nunca melhora tentando de novo.
+const MAX_ATTEMPTS = 3;
+const RETRY_DELAYS_MS = [500, 1500];
+
+export async function suprapayFetch<T>(
+  path: string,
+  init: { method: "GET" | "POST"; body?: unknown; idempotencyKey?: string }
+): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    try {
+      return await suprapayRequest<T>(path, init);
+    } catch (err) {
+      lastError = err;
+      const status = (err as { status?: number } | undefined)?.status;
+      const isRetryable = status === undefined || status >= 500;
+      if (!isRetryable || attempt === MAX_ATTEMPTS - 1) throw err;
+      console.error(`SupraPay ${init.method} ${path}: retentativa ${attempt + 1}/${MAX_ATTEMPTS - 1} após falha (status ${status ?? "rede"}).`);
+      await sleep(RETRY_DELAYS_MS[attempt]);
+    }
+  }
+  throw lastError;
 }
 
 export function mapSuprapayStatus(status: string | undefined | null): PaymentVerificationStatus {
@@ -115,13 +152,14 @@ export const suprapayProvider: PaymentProvider = {
       // orderId como Idempotency-Key: retry do mesmo pedido reaproveita a
       // cobrança já criada em vez de gerar uma segunda cobrança PIX.
       idempotencyKey: input.orderId,
+      // custom_fields é documentado como opcional pela SupraPay, mas
+      // (confirmado testando de verdade) qualquer request com esse campo
+      // preenchido derruba o endpoint com 500 internal_error — bug do lado
+      // deles. Omitido até eles corrigirem; external_reference já é
+      // suficiente pra conciliação (é o orderId).
       body: {
         amount: input.total,
         external_reference: input.orderId,
-        custom_fields: {
-          order_number: input.orderNumber,
-          customer_name: input.customerName,
-        },
       },
     });
 
